@@ -5,6 +5,10 @@ class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameScene' });
         this.playerPaddle = null; // Initialize paddle variable
+        this.cursors = null; // Initialize cursor keys variable
+        this.keyW = null; // Initialize W key variable
+        this.keyS = null; // Initialize S key variable
+        this.paddleSpeed = 400; // Pixels per second
     }
 
     preload() {
@@ -36,10 +40,45 @@ class GameScene extends Phaser.Scene {
         // Configure paddle physics
         this.playerPaddle.body.setImmovable(true); // Paddle doesn't get pushed by the ball
         this.playerPaddle.body.setCollideWorldBounds(true); // Keep paddle within game boundaries
+
+        // --- Input Handling ---
+        // Create cursor keys object
+        this.cursors = this.input.keyboard.createCursorKeys();
+        // Create W and S keys object
+        this.keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+        this.keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+
+        // Make paddle interactive for drag
+        this.playerPaddle.setInteractive();
+        this.input.setDraggable(this.playerPaddle);
+
+        // Listen for drag event
+        this.input.on('drag', (pointer, gameObject, dragX, dragY) => {
+            if (gameObject === this.playerPaddle) {
+                // Clamp the paddle's position vertically within the game bounds
+                const minY = this.playerPaddle.displayHeight / 2;
+                const maxY = this.sys.game.config.height - this.playerPaddle.displayHeight / 2;
+                gameObject.y = Phaser.Math.Clamp(dragY, minY, maxY);
+            }
+        });
     }
 
     update() {
-        // Game loop logic here (input, movement, collision)
+        // --- Player Paddle Movement ---
+
+        // Stop any previous movement
+        this.playerPaddle.body.setVelocityY(0);
+
+        // Check keyboard input
+        if (this.cursors.up.isDown || this.keyW.isDown) {
+            this.playerPaddle.body.setVelocityY(-this.paddleSpeed);
+        }
+        else if (this.cursors.down.isDown || this.keyS.isDown) {
+            this.playerPaddle.body.setVelocityY(this.paddleSpeed);
+        }
+
+        // --- Other game loop logic ---
+        // (collision, etc. will go here later)
     }
 }
 

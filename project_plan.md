@@ -4,9 +4,9 @@
 
 -   [x] Set up project structure (HTML, JS, CSS, Vite, Phaser)
 -   [x] Create basic game scene
--   [ ] Add player paddle (left side)
-    -   [ ] Control with keyboard (W/S or Up/Down)
-    -   [ ] Control with touch/mouse drag (vertical only)
+-   [x] Add player paddle (left side)
+    -   [x] Control with keyboard (W/S or Up/Down)
+    -   [x] Control with touch/mouse drag (vertical only)
 -   [ ] Add AI paddle (right side)
     -   [ ] Basic AI (follows ball's Y position)
 -   [ ] Add ball
