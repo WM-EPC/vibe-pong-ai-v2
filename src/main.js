@@ -171,7 +171,7 @@ class GameScene extends Phaser.Scene {
         this.playerScoreText = this.add.text(gameWidth * 0.25, 50, '0', scoreTextStyle).setOrigin(0.5);
         this.aiScoreText = this.add.text(gameWidth * 0.75, 50, '0', scoreTextStyle).setOrigin(0.5);
 
-        // --- Setup Background Music & Audio Context Handling --- // Re-enabled Minimal Version
+        // --- Setup Background Music & Audio Context Handling --- // MINIMAL VERSION (Reverted Again)
         this.music = this.sound.add('music', { loop: true });
 
         // Try to play only if context is already running (e.g., desktop)
@@ -182,22 +182,8 @@ class GameScene extends Phaser.Scene {
              console.log('Audio context suspended on create, music will not autoplay.');
         }
 
-        // --- Add back the interaction listener to handle suspended state ---
-        this.input.once('pointerup', () => {
-            console.log('Pointer up detected. Context state:', this.sound.context.state);
-            if (this.sound.context.state === 'suspended') {
-                console.log('Attempting to resume audio context...');
-                this.sound.context.resume().then(() => {
-                    console.log('Audio Context Resumed successfully on interaction.');
-                    // Play music immediately after successful resume
-                    if (this.music) { // Check isPlaying here
-                        this.music.play();
-                    }
-                }).catch(e => {
-                    console.error('Audio context resume failed:', e);
-                });
-            }
-        }, this);
+        // --- Interaction listener removed to avoid Vercel freeze ---
+        // this.input.once('pointerup', () => { ... });
 
         // Game Over Text (initially hidden)
         this.gameOverText = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2, '', {
