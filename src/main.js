@@ -189,12 +189,10 @@ class GameScene extends Phaser.Scene {
                 console.log('Attempting to resume audio context...');
                 this.sound.context.resume().then(() => {
                     console.log('Audio Context Resumed successfully on interaction.');
-                    // Play music only after successful resume, with a tiny delay
-                    this.time.delayedCall(50, () => {
-                        if (this.music && !this.music.isPlaying) { // Check isPlaying here
-                            this.music.play();
-                        }
-                    }, [], this);
+                    // Play music immediately after successful resume
+                    if (this.music) { // Check isPlaying here
+                        this.music.play();
+                    }
                 }).catch(e => {
                     console.error('Audio context resume failed:', e);
                 });
