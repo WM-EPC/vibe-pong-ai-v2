@@ -310,6 +310,7 @@ class GameScene extends Phaser.Scene {
                     console.log('Audio Context Resumed successfully via button.');
                     if (this.music) {
                         this.music.play();
+                        console.log("Music play attempted after resume.");
                         this.soundButton.setText('[SOUND OFF]');
                         this.music.setMute(false); // Explicitly unmute
                     }
