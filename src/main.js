@@ -175,8 +175,8 @@ class GameScene extends Phaser.Scene {
         this.playerScoreText = this.add.text(gameWidth * 0.25, 50, '0', scoreTextStyle).setOrigin(0.5);
         this.aiScoreText = this.add.text(gameWidth * 0.75, 50, '0', scoreTextStyle).setOrigin(0.5);
 
-        // --- Setup Background Music & Audio Context Handling --- // Using Tap to Start
-        this.music = this.sound.add('music', { loop: true });
+        // --- Setup Background Music & Audio Context Handling --- // Defer sound.add until startGame
+        // this.music = this.sound.add('music', { loop: true });
 
         // --- Start Text & Interaction Listener ---
         this.startText = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2, 'Tap to Start', {
@@ -261,6 +261,9 @@ class GameScene extends Phaser.Scene {
         // Guard against multiple starts if pointerdown fires rapidly
         if (this.gameStarted) return;
         this.gameStarted = true;
+
+        // Add the sound object now that interaction has happened
+        this.music = this.sound.add('music', { loop: true });
 
         // Hide start text
         this.startText.setVisible(false);
