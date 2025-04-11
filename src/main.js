@@ -171,7 +171,7 @@ class GameScene extends Phaser.Scene {
         this.playerScoreText = this.add.text(gameWidth * 0.25, 50, '0', scoreTextStyle).setOrigin(0.5);
         this.aiScoreText = this.add.text(gameWidth * 0.75, 50, '0', scoreTextStyle).setOrigin(0.5);
 
-        // --- Setup Background Music & Audio Context Handling --- // MINIMAL VERSION
+        // --- Setup Background Music & Audio Context Handling --- // Re-enabled Minimal Version
         this.music = this.sound.add('music', { loop: true });
 
         // Try to play only if context is already running (e.g., desktop)
@@ -181,6 +181,25 @@ class GameScene extends Phaser.Scene {
         } else {
              console.log('Audio context suspended on create, music will not autoplay.');
         }
+
+        // --- Add back the interaction listener to handle suspended state ---
+        this.input.once('pointerdown', () => {
+            console.log('Pointer down detected. Context state:', this.sound.context.state);
+            if (this.sound.context.state === 'suspended') {
+                console.log('Attempting to resume audio context...');
+                this.sound.context.resume().then(() => {
+                    console.log('Audio Context Resumed successfully on interaction.');
+                    // Play music only after successful resume, with a tiny delay
+                    this.time.delayedCall(50, () => {
+                        if (this.music && !this.music.isPlaying) { // Check isPlaying here
+                            this.music.play();
+                        }
+                    }, [], this);
+                }).catch(e => {
+                    console.error('Audio context resume failed:', e);
+                });
+            }
+        }, this);
 
         // Game Over Text (initially hidden)
         this.gameOverText = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2, '', {
@@ -376,7 +395,7 @@ const config = {
         default: 'arcade',
         arcade: {
             gravity: { y: 0 }, // No gravity needed for Pong
-            debug: true // ENABLED for Vercel debugging
+            debug: false // DISABLED physics debugging
         }
     },
     scene: [GameScene] // Add the scene to the configuration
