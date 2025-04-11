@@ -32,7 +32,6 @@ class GameScene extends Phaser.Scene {
         this.music = null; // Will be created on demand
         this.audioInitialized = false;
         this.soundButton = null;
-        this.readyToPlayMusic = false; // Flag to trigger play in update
     }
 
     preload() {
@@ -168,16 +167,6 @@ class GameScene extends Phaser.Scene {
         // --- Stop updates if game over ---
         if (this.gameOver) {
             return;
-        }
-
-        // --- Play Music Check (if flagged by interaction) ---
-        if (this.readyToPlayMusic) {
-            if (this.music && !this.music.isPlaying) {
-                console.log("Playing music from update loop"); // Debug log
-                this.music.play();
-            }
-            // Reset flag regardless of whether play was needed/successful
-            this.readyToPlayMusic = false;
         }
 
         // --- Player Paddle Movement ---
@@ -322,7 +311,7 @@ class GameScene extends Phaser.Scene {
                     if (this.music) {
                         this.soundButton.setText('[SOUND OFF]');
                         this.music.setMute(false); // Explicitly unmute
-                        this.readyToPlayMusic = true; // Set flag for update loop
+                        this.music.play(); // Play immediately
                     }
                 }).catch(e => {
                     console.error('Audio context resume failed:', e);
@@ -335,7 +324,7 @@ class GameScene extends Phaser.Scene {
                 if (this.music) {
                     this.soundButton.setText('[SOUND OFF]');
                     this.music.setMute(false); // Explicitly unmute
-                    this.readyToPlayMusic = true; // Set flag for update loop
+                    this.music.play(); // Play immediately
                 }
             }
         } else {
