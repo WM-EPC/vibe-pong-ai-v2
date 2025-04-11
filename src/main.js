@@ -38,8 +38,8 @@ class GameScene extends Phaser.Scene {
         // Load assets here (images, audio)
         console.log("Preloading assets in GameScene...");
 
-        // Load background music (Revert to relative path)
-        this.load.audio('music', 'assets/audio/sample-track.mp3');
+        // Load background music (Using test .m4a file)
+        this.load.audio('music', 'assets/audio/test-sound.m4a');
     }
 
     create() {
@@ -136,7 +136,7 @@ class GameScene extends Phaser.Scene {
         this.physics.world.on('worldbounds', this.handleWorldBoundsCollision, this);
 
         // --- Version Text ---
-        const versionText = 'v0.1.2'; // Keep version for now
+        const versionText = 'v0.1.2a'; // Bump version for cache busting test
         this.add.text(10, gameHeight - 10, versionText, {
             fontSize: '12px',
             fill: '#555'
