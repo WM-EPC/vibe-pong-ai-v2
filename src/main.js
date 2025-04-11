@@ -27,6 +27,11 @@ class GameScene extends Phaser.Scene {
         this.winningScore = 11;
         this.gameOver = false;
         this.gameOverText = null;
+
+        // Audio State
+        this.music = null; // Will be created on demand
+        this.audioInitialized = false;
+        this.soundButton = null;
     }
 
     preload() {
@@ -142,9 +147,13 @@ class GameScene extends Phaser.Scene {
         this.playerScoreText = this.add.text(gameWidth * 0.25, 50, '0', scoreTextStyle).setOrigin(0.5);
         this.aiScoreText = this.add.text(gameWidth * 0.75, 50, '0', scoreTextStyle).setOrigin(0.5);
 
-        // --- Setup Background Music & Audio Context Handling --- // sound.add disabled
-        // this.music = this.sound.add('music', { loop: true });
-        // if (this.sound.context.state === 'running') { ... }
+        // --- Sound Toggle Button ---
+        const soundButtonTextStyle = { fontSize: '18px', fill: '#fff', backgroundColor: '#555', padding: { left: 5, right: 5, top: 2, bottom: 2 } };
+        this.soundButton = this.add.text(gameWidth - this.boundsInset, this.boundsInset, '[SOUND ON]', soundButtonTextStyle)
+            .setOrigin(1, 0) // Anchor top-right relative to bounds inset
+            .setInteractive();
+
+        this.soundButton.on('pointerdown', this.toggleSound, this);
 
         // Game Over Text (initially hidden)
         this.gameOverText = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2, '', {
@@ -281,6 +290,49 @@ class GameScene extends Phaser.Scene {
 
         this.gameOverText.setText(message);
         this.gameOverText.setVisible(true);
+    }
+
+    toggleSound() {
+        if (!this.audioInitialized) {
+            // --- First time: Initialize and try to play ---
+            this.audioInitialized = true;
+
+            // Check if music object already exists (shouldn't, but safe check)
+            if (!this.music) {
+                this.music = this.sound.add('music', { loop: true });
+            }
+
+            // Check context state and attempt play
+            if (this.sound.context.state === 'suspended') {
+                console.log('Attempting to resume audio context via button...');
+                this.sound.context.resume().then(() => {
+                    console.log('Audio Context Resumed successfully via button.');
+                    if (this.music) {
+                        this.music.play();
+                        this.soundButton.setText('[SOUND OFF]');
+                        this.music.setMute(false); // Explicitly unmute
+                    }
+                }).catch(e => {
+                    console.error('Audio context resume failed:', e);
+                    // Keep button text as [SOUND ON] or show error?
+                    this.soundButton.setText('[AUDIO ERR]');
+                });
+            } else if (this.sound.context.state === 'running') {
+                 console.log('Audio context already running, playing music.');
+                // Context already running, play music if loaded and not playing
+                if (this.music) {
+                    this.music.play();
+                    this.soundButton.setText('[SOUND OFF]');
+                    this.music.setMute(false); // Explicitly unmute
+                }
+            }
+        } else {
+            // --- Subsequent times: Toggle mute ---
+            if (this.music) { // Check if music exists (it should)
+                this.music.setMute(!this.music.mute);
+                this.soundButton.setText(this.music.mute ? '[SOUND ON]' : '[SOUND OFF]');
+            }
+        }
     }
 }
 
