@@ -293,6 +293,7 @@ class GameScene extends Phaser.Scene {
     }
 
     toggleSound() {
+        console.log("toggleSound() called!"); // DEBUG: Check if function is triggered
         if (!this.audioInitialized) {
             // --- First time: Initialize and try to play ---
             this.audioInitialized = true;
