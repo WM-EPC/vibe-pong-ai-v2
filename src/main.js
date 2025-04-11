@@ -258,6 +258,7 @@ class GameScene extends Phaser.Scene {
     }
 
     startGame() {
+        console.log("startGame() triggered!"); // Added for debugging
         // Guard against multiple starts if pointerdown fires rapidly
         if (this.gameStarted) return;
         this.gameStarted = true;
