@@ -27,6 +27,10 @@ class GameScene extends Phaser.Scene {
         this.winningScore = 11;
         this.gameOver = false;
         this.gameOverText = null;
+
+        // Game Start State
+        this.gameStarted = false;
+        this.startText = null;
     }
 
     preload() {
@@ -137,10 +141,10 @@ class GameScene extends Phaser.Scene {
         // Right line
         graphics.lineBetween(gameWidth - this.boundsInset, this.boundsInset, gameWidth - this.boundsInset, gameHeight - this.boundsInset);
 
-        // Give the ball an initial velocity
-        const initialSpeedX = 200;
-        const initialSpeedY = Phaser.Math.Between(-100, 100); // Random initial Y direction
-        this.ball.body.setVelocity(initialSpeedX, initialSpeedY);
+        // Give the ball an initial velocity - MOVED to startGame method
+        // const initialSpeedX = 200;
+        // const initialSpeedY = Phaser.Math.Between(-100, 100);
+        // this.ball.body.setVelocity(initialSpeedX, initialSpeedY);
 
         // --- Create AI Paddle (right side) ---
         const aiPaddleX = gameWidth - 100; // Position on the right
@@ -171,21 +175,16 @@ class GameScene extends Phaser.Scene {
         this.playerScoreText = this.add.text(gameWidth * 0.25, 50, '0', scoreTextStyle).setOrigin(0.5);
         this.aiScoreText = this.add.text(gameWidth * 0.75, 50, '0', scoreTextStyle).setOrigin(0.5);
 
-        // --- Setup Background Music & Audio Context Handling --- // Temporarily disable sound.add/play
-        /*
+        // --- Setup Background Music & Audio Context Handling --- // Using Tap to Start
         this.music = this.sound.add('music', { loop: true });
 
-        // Try to play only if context is already running (e.g., desktop)
-        if (this.sound.context.state === 'running') {
-             console.log('Audio context running on create, playing music.');
-             this.music.play();
-        } else {
-             console.log('Audio context suspended on create, music will not autoplay.');
-        }
-        */
+        // --- Start Text & Interaction Listener ---
+        this.startText = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2, 'Tap to Start', {
+            fontSize: '40px',
+            fill: '#ffffff'
+        }).setOrigin(0.5);
 
-        // --- Interaction listener removed to avoid Vercel freeze ---
-        // this.input.once('pointerup', () => { ... });
+        this.input.once('pointerdown', this.startGame, this);
 
         // Game Over Text (initially hidden)
         this.gameOverText = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2, '', {
@@ -256,6 +255,37 @@ class GameScene extends Phaser.Scene {
 
         // --- Other game loop logic ---
         // (collision, etc. will go here later)
+    }
+
+    startGame() {
+        // Guard against multiple starts if pointerdown fires rapidly
+        if (this.gameStarted) return;
+        this.gameStarted = true;
+
+        // Hide start text
+        this.startText.setVisible(false);
+
+        // --- Try to unlock/play audio ---
+        console.log('Start interaction detected. Context state:', this.sound.context.state);
+        if (this.sound.context.state === 'suspended') {
+            console.log('Attempting to resume audio context...');
+            this.sound.context.resume().then(() => {
+                console.log('Audio Context Resumed successfully on interaction.');
+                if (this.music) {
+                    this.music.play();
+                }
+            }).catch(e => {
+                console.error('Audio context resume failed:', e);
+            });
+        } else {
+            // Context already running, play music if loaded
+            if (this.music) {
+                 this.music.play();
+            }
+        }
+
+        // Serve the ball for the first time
+        this.resetBall(Math.random() < 0.5); // Serve randomly initially
     }
 
     handlePaddleBallCollision(ball, paddle) {
