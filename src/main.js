@@ -171,7 +171,8 @@ class GameScene extends Phaser.Scene {
         this.playerScoreText = this.add.text(gameWidth * 0.25, 50, '0', scoreTextStyle).setOrigin(0.5);
         this.aiScoreText = this.add.text(gameWidth * 0.75, 50, '0', scoreTextStyle).setOrigin(0.5);
 
-        // --- Setup Background Music & Audio Context Handling ---
+        // --- Setup Background Music & Audio Context Handling --- // TEMPORARILY DISABLED FOR VERCEL DEBUG
+        /*
         this.music = this.sound.add('music', { loop: true });
 
         // Attach the listener using input.once
@@ -190,6 +191,7 @@ class GameScene extends Phaser.Scene {
                 });
             }
         }, this);
+        */
 
         // Game Over Text (initially hidden)
         this.gameOverText = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2, '', {
