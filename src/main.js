@@ -22,6 +22,11 @@ class GameScene extends Phaser.Scene {
         this.playerScoreText = null;
         this.aiScoreText = null;
         this.boundsInset = 10; // Store inset value for use in update
+
+        // Game State
+        this.winningScore = 11;
+        this.gameOver = false;
+        this.gameOverText = null;
     }
 
     preload() {
@@ -148,7 +153,7 @@ class GameScene extends Phaser.Scene {
         this.physics.world.on('worldbounds', this.handleWorldBoundsCollision, this);
 
         // --- Version Text ---
-        const versionText = 'v0.1.1';
+        const versionText = 'v0.1.2';
         this.add.text(10, gameHeight - 10, versionText, {
             fontSize: '12px',
             fill: '#555' // Dim color
@@ -158,9 +163,21 @@ class GameScene extends Phaser.Scene {
         const scoreTextStyle = { fontSize: '48px', fill: '#fff' };
         this.playerScoreText = this.add.text(gameWidth * 0.25, 50, '0', scoreTextStyle).setOrigin(0.5);
         this.aiScoreText = this.add.text(gameWidth * 0.75, 50, '0', scoreTextStyle).setOrigin(0.5);
+
+        // Game Over Text (initially hidden)
+        this.gameOverText = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2, '', {
+            fontSize: '64px',
+            fill: '#ff0000',
+            align: 'center'
+        }).setOrigin(0.5).setVisible(false);
     }
 
-    update() {
+    update(time, delta) {
+        // --- Stop updates if game over ---
+        if (this.gameOver) {
+            return; // Skip paddle movement and other updates
+        }
+
         // --- Player Paddle Movement ---
 
         // Stop any previous movement
@@ -252,24 +269,37 @@ class GameScene extends Phaser.Scene {
 
     handleWorldBoundsCollision(body, up, down, left, right) {
         // Check if it was the ball hitting the left or right boundary
-        if (body === this.ball.body) {
+        if (body === this.ball.body && !this.gameOver) { // Only process if game isn't over
+            let scorer = null; // 'player' or 'ai'
+
             if (left) {
                 // AI scored
                 this.aiScore++;
                 this.aiScoreText.setText(this.aiScore);
-                this.resetBall(true); // Serve to player
+                scorer = 'ai';
             }
             else if (right) {
                 // Player scored
                 this.playerScore++;
                 this.playerScoreText.setText(this.playerScore);
-                this.resetBall(false); // Serve to AI
+                scorer = 'player';
             }
-            // We don't need to handle up/down, the bounce takes care of it
+
+            // Check for win condition
+            if (this.playerScore >= this.winningScore || this.aiScore >= this.winningScore) {
+                this.endGame(scorer);
+            }
+            // If no winner yet, reset the ball
+            else if (scorer) {
+                 this.resetBall(scorer === 'ai'); // Serve to player if AI scored, else serve to AI
+            }
         }
     }
 
     resetBall(serveToPlayer) {
+         // Check if game is already over (prevents race condition with delayed call)
+         if (this.gameOver) return;
+
         // Stop the ball and make it invisible immediately
         this.ball.body.stop(); // More comprehensive stop than just velocity
         this.ball.setVisible(false);
@@ -288,6 +318,29 @@ class GameScene extends Phaser.Scene {
             // Serve immediately
             this.ball.body.setVelocity(initialSpeedX, initialSpeedY);
         });
+    }
+
+    endGame(winner) {
+        this.gameOver = true;
+        this.ball.body.stop();
+        this.ball.setVisible(false);
+
+        // Stop paddles as well
+        this.playerPaddle.body.stop();
+        this.aiPaddle.body.stop();
+
+        let message = '';
+        if (winner === 'player') {
+            message = 'You Win!';
+        }
+        else {
+            message = 'AI Wins!';
+        }
+
+        this.gameOverText.setText(message);
+        this.gameOverText.setVisible(true);
+
+        // Optional: Could add a delay then restart option here later
     }
 }
 

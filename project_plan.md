@@ -7,17 +7,17 @@
 -   [x] Add player paddle (left side)
     -   [x] Control with keyboard (W/S or Up/Down)
     -   [x] Control with touch/mouse drag (vertical only)
--   [ ] Add AI paddle (right side)
-    -   [ ] Basic AI (follows ball's Y position)
--   [ ] Add ball
-    -   [ ] Initial movement
-    -   [ ] Collision with top/bottom walls
-    -   [ ] Collision with paddles (basic bounce)
--   [ ] Scoring system
-    -   [ ] Detect when ball goes past a paddle
-    -   [ ] Display score
-    -   [ ] Reset ball after score
--   [ ] Basic win condition (e.g., first to 5 points)
+-   [x] Add AI paddle (right side)
+    -   [x] Basic AI (follows ball's Y position)
+-   [x] Add ball
+    -   [x] Initial movement
+    -   [x] Collision with top/bottom walls
+    -   [x] Collision with paddles (basic bounce)
+-   [x] Scoring system
+    -   [x] Detect when ball goes past a paddle (via world bounds event)
+    -   [x] Display score
+    -   [x] Reset ball after score
+-   [x] Basic win condition (e.g., first to 11 points)
 
 ## Phase 2: Rhythm & Vibe Integration
 
