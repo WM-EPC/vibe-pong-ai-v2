@@ -1,14 +1,29 @@
 /* style.css */
+html {
+    height: 100%;
+}
+
 body {
     margin: 0;
     background-color: #000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    overflow: hidden; /* Prevent scrollbars */
+    height: 100%;
+    overflow: hidden; /* Prevent scrollbars on body */
+    /* display: flex; - Not needed */
+    /* justify-content: center; - Not needed */
+    /* align-items: center; - Not needed */
+}
+
+#game-container {
+    position: absolute;
+    /* width: 100%; */ /* Removed - let offsets define size */
+    /* height: 100%; */ /* Removed - let offsets define size */
+    /* Apply iOS safe area insets */
+    top: env(safe-area-inset-top, 0px);
+    bottom: env(safe-area-inset-bottom, 0px);
+    left: env(safe-area-inset-left, 0px);
+    right: env(safe-area-inset-right, 0px);
 }
 
 canvas {
-    border: 1px solid #333; /* Optional: Add a border for visibility */
+    /* border: 1px solid #333; */ /* Removed as we draw bounds in Phaser now */
 } 
