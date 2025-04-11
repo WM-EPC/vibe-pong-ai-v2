@@ -121,7 +121,7 @@ class GameScene extends Phaser.Scene {
         this.physics.add.collider(this.ball, this.playerPaddle, this.handlePaddleBallCollision, null, this);
 
         // --- Version Text ---
-        const versionText = 'v0.0.2';
+        const versionText = 'v0.1.0';
         this.add.text(10, gameHeight - 10, versionText, {
             fontSize: '12px',
             fill: '#555' // Dim color
