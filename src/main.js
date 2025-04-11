@@ -376,7 +376,7 @@ const config = {
         default: 'arcade',
         arcade: {
             gravity: { y: 0 }, // No gravity needed for Pong
-            debug: false // Set to true for physics debugging visuals
+            debug: true // ENABLED for Vercel debugging
         }
     },
     scene: [GameScene] // Add the scene to the configuration
