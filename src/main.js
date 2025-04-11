@@ -38,8 +38,8 @@ class GameScene extends Phaser.Scene {
         // Load assets here (images, audio)
         console.log("Preloading assets in GameScene...");
 
-        // Load background music
-        this.load.audio('music', 'assets/audio/sample-track.mp3');
+        // Load background music (with leading slash for root path)
+        this.load.audio('music', '/assets/audio/sample-track.mp3');
     }
 
     create() {
