@@ -183,8 +183,10 @@ class GameScene extends Phaser.Scene {
             fontSize: '40px',
             fill: '#ffffff'
         }).setOrigin(0.5);
+        this.startText.setInteractive(); // Make the text interactive
 
-        this.input.once('pointerdown', this.startGame, this);
+        // Attach listener directly to the text object
+        this.startText.once('pointerdown', this.startGame, this);
 
         // Game Over Text (initially hidden)
         this.gameOverText = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2, '', {
