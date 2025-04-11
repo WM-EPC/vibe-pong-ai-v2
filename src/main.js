@@ -183,8 +183,8 @@ class GameScene extends Phaser.Scene {
         }
 
         // --- Add back the interaction listener to handle suspended state ---
-        this.input.once('pointerdown', () => {
-            console.log('Pointer down detected. Context state:', this.sound.context.state);
+        this.input.once('pointerup', () => {
+            console.log('Pointer up detected. Context state:', this.sound.context.state);
             if (this.sound.context.state === 'suspended') {
                 console.log('Attempting to resume audio context...');
                 this.sound.context.resume().then(() => {
