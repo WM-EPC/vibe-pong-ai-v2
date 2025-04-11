@@ -171,7 +171,8 @@ class GameScene extends Phaser.Scene {
         this.playerScoreText = this.add.text(gameWidth * 0.25, 50, '0', scoreTextStyle).setOrigin(0.5);
         this.aiScoreText = this.add.text(gameWidth * 0.75, 50, '0', scoreTextStyle).setOrigin(0.5);
 
-        // --- Setup Background Music & Audio Context Handling --- // MINIMAL VERSION (Reverted Again)
+        // --- Setup Background Music & Audio Context Handling --- // Temporarily disable sound.add/play
+        /*
         this.music = this.sound.add('music', { loop: true });
 
         // Try to play only if context is already running (e.g., desktop)
@@ -181,6 +182,7 @@ class GameScene extends Phaser.Scene {
         } else {
              console.log('Audio context suspended on create, music will not autoplay.');
         }
+        */
 
         // --- Interaction listener removed to avoid Vercel freeze ---
         // this.input.once('pointerup', () => { ... });
