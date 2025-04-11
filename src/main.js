@@ -13,6 +13,15 @@ class GameScene extends Phaser.Scene {
         this.isDraggingPaddle = false; // Track drag state
         this.inputZone = null; // Add input zone variable
         this.activePointer = null; // Track the pointer controlling the paddle
+        this.aiPaddle = null; // Initialize AI paddle variable
+        this.aiPaddleSpeed = 150; // AI paddle speed (Reduced significantly for testing)
+
+        // Score tracking
+        this.playerScore = 0;
+        this.aiScore = 0;
+        this.playerScoreText = null;
+        this.aiScoreText = null;
+        this.boundsInset = 10; // Store inset value for use in update
     }
 
     preload() {
@@ -92,40 +101,63 @@ class GameScene extends Phaser.Scene {
         this.physics.add.existing(this.ball);
 
         // Configure ball physics
-        this.ball.body.setCollideWorldBounds(true); // Collide with walls
-        this.ball.body.setBounce(1, 1); // Full bounce off walls and paddles
+        this.ball.body.setCollideWorldBounds(true); // Re-enabled - should respect physics.world.setBounds
+        this.ball.body.setBounce(1, 1); // Still bounce off top/bottom and paddles
 
         // --- Adjust World Bounds for Physics & Visuals ---
-        const boundsInset = 10; // REVERTED to smaller value - safe areas handled by CSS
-        this.physics.world.setBounds(boundsInset, boundsInset, gameWidth - boundsInset * 2, gameHeight - boundsInset * 2);
+        // const boundsInset = 10; // REVERTED to smaller value - safe areas handled by CSS - Stored on this now
+        this.physics.world.setBounds(this.boundsInset, this.boundsInset, gameWidth - this.boundsInset * 2, gameHeight - this.boundsInset * 2);
+        // Remove manual collision checks - setCollideWorldBounds handles this
+        // this.ball.body.checkCollision.up = true;
+        // this.ball.body.checkCollision.down = true;
+        // this.ball.body.checkCollision.left = true; // Re-enabled for testing
+        // this.ball.body.checkCollision.right = true; // Re-enabled for testing
 
         // Draw visual boundary lines
         const graphics = this.add.graphics();
         graphics.lineStyle(2, 0x333333, 1); // 2px thick, dark grey, full alpha
         // Top line
-        graphics.lineBetween(boundsInset, boundsInset, gameWidth - boundsInset, boundsInset);
+        graphics.lineBetween(this.boundsInset, this.boundsInset, gameWidth - this.boundsInset, this.boundsInset);
         // Bottom line
-        graphics.lineBetween(boundsInset, gameHeight - boundsInset, gameWidth - boundsInset, gameHeight - boundsInset);
+        graphics.lineBetween(this.boundsInset, gameHeight - this.boundsInset, gameWidth - this.boundsInset, gameHeight - this.boundsInset);
         // Left line
-        graphics.lineBetween(boundsInset, boundsInset, boundsInset, gameHeight - boundsInset);
+        graphics.lineBetween(this.boundsInset, this.boundsInset, this.boundsInset, gameHeight - this.boundsInset);
         // Right line
-        graphics.lineBetween(gameWidth - boundsInset, boundsInset, gameWidth - boundsInset, gameHeight - boundsInset);
+        graphics.lineBetween(gameWidth - this.boundsInset, this.boundsInset, gameWidth - this.boundsInset, gameHeight - this.boundsInset);
 
         // Give the ball an initial velocity
         const initialSpeedX = 200;
         const initialSpeedY = Phaser.Math.Between(-100, 100); // Random initial Y direction
         this.ball.body.setVelocity(initialSpeedX, initialSpeedY);
 
+        // --- Create AI Paddle (right side) ---
+        const aiPaddleX = gameWidth - 100; // Position on the right
+        this.aiPaddle = this.add.rectangle(aiPaddleX, paddleY, paddleWidth, paddleHeight, 0xffffff); // Use same dimensions/color for now
+        this.physics.add.existing(this.aiPaddle);
+        this.aiPaddle.body.setImmovable(true);
+        // this.aiPaddle.body.setCollideWorldBounds(true); // Probably unnecessary and potentially causing issues?
+
         // --- Collisions ---
         // Ball vs Player Paddle
         this.physics.add.collider(this.ball, this.playerPaddle, this.handlePaddleBallCollision, null, this);
+        // Ball vs AI Paddle
+        this.physics.add.collider(this.ball, this.aiPaddle, this.handlePaddleBallCollision, null, this);
+
+        // --- Listen for World Bounds Collision ---
+        this.ball.body.onWorldBounds = true; // Enable the event for the ball specifically
+        this.physics.world.on('worldbounds', this.handleWorldBoundsCollision, this);
 
         // --- Version Text ---
-        const versionText = 'v0.1.0';
+        const versionText = 'v0.1.1';
         this.add.text(10, gameHeight - 10, versionText, {
             fontSize: '12px',
             fill: '#555' // Dim color
         }).setOrigin(0, 1); // Anchor bottom-left
+
+        // --- Score Text ---
+        const scoreTextStyle = { fontSize: '48px', fill: '#fff' };
+        this.playerScoreText = this.add.text(gameWidth * 0.25, 50, '0', scoreTextStyle).setOrigin(0.5);
+        this.aiScoreText = this.add.text(gameWidth * 0.75, 50, '0', scoreTextStyle).setOrigin(0.5);
     }
 
     update() {
@@ -163,39 +195,99 @@ class GameScene extends Phaser.Scene {
             }
         }
 
+        // --- AI Paddle Movement --- // Re-enabled
+        // Basic AI: Try to follow the ball's y position with a slight lag/max speed
+        const yDiff = this.ball.y - this.aiPaddle.y;
+
+        if (Math.abs(yDiff) > this.aiPaddle.displayHeight * 0.1) { // Only move if ball is significantly different
+            if (yDiff < 0) {
+                // Ball is higher, move up
+                this.aiPaddle.body.setVelocityY(-this.aiPaddleSpeed);
+            }
+            else {
+                // Ball is lower, move down
+                this.aiPaddle.body.setVelocityY(this.aiPaddleSpeed);
+            }
+        }
+         else {
+             // Ball is close, stop moving
+             this.aiPaddle.body.setVelocityY(0);
+         }
+
         // --- Other game loop logic ---
         // (collision, etc. will go here later)
     }
 
     handlePaddleBallCollision(ball, paddle) {
-        console.log("Ball hit player paddle");
-        // We'll add more sophisticated bounce logic later (angle based on hit position)
+        // console.log("Ball hit paddle"); // Changed log message slightly
         let diff = 0;
-        const currentSpeedX = Math.abs(ball.body.velocity.x); // Store current X speed
+        const currentSpeedX = Math.abs(ball.body.velocity.x); // Store current X speed magnitude
         const maxDeflectionSpeedY = currentSpeedX * 1.5; // Limit vertical speed change relative to horizontal
+        let newSpeedY = 0;
 
-        // Ball is higher than paddle center
+        // Calculate vertical deflection based on hit position
         if (ball.y < paddle.y) {
             diff = paddle.y - ball.y;
-            // Deflect upwards, scale deflection by difference, clamp max speed
-            const newSpeedY = Phaser.Math.Clamp(-10 * diff, -maxDeflectionSpeedY, -50); // Ensure minimum deflection
-            ball.body.setVelocity(currentSpeedX, newSpeedY); // Set X and Y
+            newSpeedY = Phaser.Math.Clamp(-10 * diff, -maxDeflectionSpeedY, -50);
         }
-        // Ball is lower than paddle center
         else if (ball.y > paddle.y) {
             diff = ball.y - paddle.y;
-             // Deflect downwards, scale deflection by difference, clamp max speed
-            const newSpeedY = Phaser.Math.Clamp(10 * diff, 50, maxDeflectionSpeedY); // Ensure minimum deflection
-            ball.body.setVelocity(currentSpeedX, newSpeedY); // Set X and Y
+            newSpeedY = Phaser.Math.Clamp(10 * diff, 50, maxDeflectionSpeedY);
         }
-        // Ball hit paddle center
         else {
-            // Add a slight random angle on center hits
-            ball.body.setVelocity(currentSpeedX, Phaser.Math.Between(-50, 50)); // Randomly up or down slightly, preserve X
+            newSpeedY = Phaser.Math.Between(-50, 50); // Slight random angle on center hits
+        }
+
+        // Set velocity: Reverse X direction based on which paddle was hit
+        if (paddle === this.playerPaddle) {
+            ball.body.setVelocity(currentSpeedX, newSpeedY); // Bounce right
+        }
+        else if (paddle === this.aiPaddle) {
+            ball.body.setVelocity(-currentSpeedX, newSpeedY); // Bounce left
         }
 
         // Optional: Increase ball speed slightly on each hit (uncomment to enable)
         // ball.body.velocity.scale(1.05);
+    }
+
+    handleWorldBoundsCollision(body, up, down, left, right) {
+        // Check if it was the ball hitting the left or right boundary
+        if (body === this.ball.body) {
+            if (left) {
+                // AI scored
+                this.aiScore++;
+                this.aiScoreText.setText(this.aiScore);
+                this.resetBall(true); // Serve to player
+            }
+            else if (right) {
+                // Player scored
+                this.playerScore++;
+                this.playerScoreText.setText(this.playerScore);
+                this.resetBall(false); // Serve to AI
+            }
+            // We don't need to handle up/down, the bounce takes care of it
+        }
+    }
+
+    resetBall(serveToPlayer) {
+        // Stop the ball and make it invisible immediately
+        this.ball.body.stop(); // More comprehensive stop than just velocity
+        this.ball.setVisible(false);
+
+        // Wait 1 second before respawning and serving
+        this.time.delayedCall(1000, () => {
+            // Random initial Y speed
+            const initialSpeedY = Phaser.Math.Between(-100, 100);
+            // Serve direction based on who scored
+            const initialSpeedX = serveToPlayer ? -200 : 200;
+
+            // Make ball visible again AT the center position
+            this.ball.setPosition(this.sys.game.config.width / 2, this.sys.game.config.height / 2);
+            this.ball.setVisible(true);
+
+            // Serve immediately
+            this.ball.body.setVelocity(initialSpeedX, initialSpeedY);
+        });
     }
 }
 
