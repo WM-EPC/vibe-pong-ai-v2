@@ -174,43 +174,22 @@ class GameScene extends Phaser.Scene {
         // --- Setup Background Music & Audio Context Handling ---
         this.music = this.sound.add('music', { loop: true });
 
-        // Define a listener function to handle unlocking and playing
-        this.soundUnlockListener = () => {
-            console.log('Sound unlock listener triggered. Context state:', this.sound.context.state);
+        // Attach the listener using input.once
+        this.input.once('pointerdown', () => {
+            console.log('Pointer down detected. Context state:', this.sound.context.state);
             if (this.sound.context.state === 'suspended') {
-                // Attempt to resume the context
                 console.log('Attempting to resume audio context...');
                 this.sound.context.resume().then(() => {
                     console.log('Audio Context Resumed successfully on interaction.');
-                    // Play music now that context is resumed - removed isPlaying check
+                    // Play music only after successful resume
                     if (this.music) {
-                         this.music.play();
+                        this.music.play();
                     }
-                    // Remove this listener now that it has done its job
-                    console.log('Removing pointerdown listener after resume success.');
-                    this.input.off('pointerdown', this.soundUnlockListener);
                 }).catch(e => {
                     console.error('Audio context resume failed:', e);
-                    // Still remove listener even if resume failed
-                    console.log('Removing pointerdown listener after resume failure.');
-                    this.input.off('pointerdown', this.soundUnlockListener);
                 });
-            } else {
-                // Context already running, play music if not already playing
-                if (this.music && !this.music.isPlaying) {
-                     this.music.play();
-                }
-                 // Remove this listener as context is already running
-                 console.log('Context already running. Removing pointerdown listener.');
-                 this.input.off('pointerdown', this.soundUnlockListener);
             }
-        };
-
-        // Log initial state before attaching listener
-        console.log('Initial Audio Context state:', this.sound.context.state);
-
-        // Attach the listener
-        this.input.on('pointerdown', this.soundUnlockListener, this);
+        }, this);
 
         // Game Over Text (initially hidden)
         this.gameOverText = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2, '', {
