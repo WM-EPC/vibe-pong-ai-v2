@@ -4,7 +4,10 @@ import Phaser from 'phaser';
 class GameScene extends Phaser.Scene {
     constructor() {
         super({ key: 'GameScene' });
-        this.playerPaddle = null; // Initialize paddle variable
+        this.playerPaddlePhysics = null;
+        this.playerPaddleGraphics = null;
+        this.aiPaddlePhysics = null;
+        this.aiPaddleGraphics = null;
         this.cursors = null; // Initialize cursor keys variable
         this.keyW = null; // Initialize W key variable
         this.keyS = null; // Initialize S key variable
@@ -13,7 +16,6 @@ class GameScene extends Phaser.Scene {
         this.isDraggingPaddle = false; // Track drag state
         this.inputZone = null; // Add input zone variable
         this.activePointer = null; // Track the pointer controlling the paddle
-        this.aiPaddle = null; // Initialize AI paddle variable
         this.aiPaddleSpeed = 150; // AI paddle speed (Reduced significantly for testing)
 
         // Score tracking
@@ -41,6 +43,11 @@ class GameScene extends Phaser.Scene {
         this.gridScrollY = 0;
         this.gridScrollSpeed = 0.5; // Slower scroll speed
         this.perspectivePointY = 0; // Vanishing point Y (relative to center)
+
+        // Define paddle colors
+        this.playerColor = 0x00ffff; // Cyan
+        this.aiColor = 0xff00ff; // Pink
+        this.ballColor = 0xffff00; // Yellow
     }
 
     preload() {
@@ -70,12 +77,15 @@ class GameScene extends Phaser.Scene {
         const paddleX = 100; // MOVED INWARD: Increased distance from the left edge
         const paddleY = gameHeight / 2; // Center vertically
 
-        this.playerPaddle = this.add.rectangle(paddleX, paddleY, paddleWidth, paddleHeight, 0x00ffff); // Cyan Player
-        this.physics.add.existing(this.playerPaddle); // Add physics body
+        // --- Create Player Paddle Graphics ---
+        this.playerPaddleGraphics = this.add.graphics();
+        this.drawPaddleGraphics(this.playerPaddleGraphics, paddleX, paddleY, paddleWidth, paddleHeight, this.playerColor);
 
-        // Configure paddle physics
-        this.playerPaddle.body.setImmovable(true); // Paddle doesn't get pushed by the ball
-        this.playerPaddle.body.setCollideWorldBounds(true); // Keep paddle within game boundaries
+        // --- Create Player Paddle Physics Zone (Invisible) ---
+        this.playerPaddlePhysics = this.add.zone(paddleX, paddleY, paddleWidth, paddleHeight);
+        this.physics.add.existing(this.playerPaddlePhysics);
+        this.playerPaddlePhysics.body.setImmovable(true);
+        this.playerPaddlePhysics.body.setCollideWorldBounds(true);
 
         // --- Input Handling ---
         this.cursors = this.input.keyboard.createCursorKeys();
@@ -98,7 +108,7 @@ class GameScene extends Phaser.Scene {
              if (pointer === this.activePointer) {
                 this.isDraggingPaddle = false;
                 this.activePointer = null;
-                this.playerPaddle.body.setVelocityY(0);
+                this.playerPaddlePhysics.body.setVelocityY(0);
             }
         });
 
@@ -106,13 +116,13 @@ class GameScene extends Phaser.Scene {
             if (pointer === this.activePointer) {
                 this.isDraggingPaddle = false;
                 this.activePointer = null;
-                this.playerPaddle.body.setVelocityY(0);
+                this.playerPaddlePhysics.body.setVelocityY(0);
             }
         });
 
         // --- Create Ball ---
         const ballSize = 15;
-        this.ball = this.add.circle(gameWidth / 2, gameHeight / 2, ballSize / 2, 0xffff00); // Yellow Ball
+        this.ball = this.add.circle(gameWidth / 2, gameHeight / 2, ballSize / 2, this.ballColor);
         this.physics.add.existing(this.ball);
 
         // Configure ball physics
@@ -137,13 +147,19 @@ class GameScene extends Phaser.Scene {
 
         // --- Create AI Paddle (right side) ---
         const aiPaddleX = gameWidth - 100;
-        this.aiPaddle = this.add.rectangle(aiPaddleX, paddleY, paddleWidth, paddleHeight, 0xff00ff); // Pink AI
-        this.physics.add.existing(this.aiPaddle);
-        this.aiPaddle.body.setImmovable(true);
+        this.aiPaddleGraphics = this.add.graphics();
+        this.drawPaddleGraphics(this.aiPaddleGraphics, aiPaddleX, paddleY, paddleWidth, paddleHeight, this.aiColor);
+
+        // --- Create AI Paddle Physics Zone (Invisible) ---
+        this.aiPaddlePhysics = this.add.zone(aiPaddleX, paddleY, paddleWidth, paddleHeight);
+        this.physics.add.existing(this.aiPaddlePhysics);
+        this.aiPaddlePhysics.body.setImmovable(true);
+        // No need for collide world bounds on AI typically, but fine to leave
+        this.aiPaddlePhysics.body.setCollideWorldBounds(true);
 
         // --- Collisions ---
-        this.physics.add.collider(this.ball, this.playerPaddle, this.handlePaddleBallCollision, null, this);
-        this.physics.add.collider(this.ball, this.aiPaddle, this.handlePaddleBallCollision, null, this);
+        this.physics.add.collider(this.ball, this.playerPaddlePhysics, this.handlePaddleBallCollision, null, this);
+        this.physics.add.collider(this.ball, this.aiPaddlePhysics, this.handlePaddleBallCollision, null, this);
 
         // --- Listen for World Bounds Collision ---
         this.ball.body.onWorldBounds = true;
@@ -206,42 +222,50 @@ class GameScene extends Phaser.Scene {
         this.drawGrid();
 
         // --- Player Paddle Movement ---
-        this.playerPaddle.body.setVelocityY(0);
+        this.playerPaddlePhysics.body.setVelocityY(0); // Move the physics body
 
         if (this.activePointer && this.activePointer.isDown) {
-            const minY = this.playerPaddle.displayHeight / 2;
-            const maxY = this.sys.game.config.height - this.playerPaddle.displayHeight / 2;
+            const minY = paddleHeight / 2; // Use paddleHeight directly
+            const maxY = this.sys.game.config.height - paddleHeight / 2;
             const targetY = Phaser.Math.Clamp(this.activePointer.y, minY, maxY);
-            this.physics.moveTo(this.playerPaddle, this.playerPaddle.x, targetY, null, 75);
+            // Move the physics body towards the target Y
+            this.physics.moveTo(this.playerPaddlePhysics, this.playerPaddlePhysics.body.x + paddleWidth / 2, targetY, null, 75);
             this.isDraggingPaddle = true;
         }
         else {
              if (this.isDraggingPaddle) {
                  this.isDraggingPaddle = false;
                  this.activePointer = null;
+                 this.playerPaddlePhysics.body.setVelocityY(0); // Stop physics body
              }
             if (this.cursors.up.isDown || this.keyW.isDown) {
-                this.playerPaddle.body.setVelocityY(-this.paddleSpeed);
+                this.playerPaddlePhysics.body.setVelocityY(-this.paddleSpeed); // Move physics body
             }
             else if (this.cursors.down.isDown || this.keyS.isDown) {
-                this.playerPaddle.body.setVelocityY(this.paddleSpeed);
+                this.playerPaddlePhysics.body.setVelocityY(this.paddleSpeed); // Move physics body
             }
         }
+        // Sync Graphics with Physics Zone
+        this.playerPaddleGraphics.x = this.playerPaddlePhysics.body.x;
+        this.playerPaddleGraphics.y = this.playerPaddlePhysics.body.y;
 
         // --- AI Paddle Movement ---
-        const yDiff = this.ball.y - this.aiPaddle.y;
+        const yDiff = this.ball.y - (this.aiPaddlePhysics.body.y + paddleHeight / 2); // Compare ball Y to AI physics body center Y
 
-        if (Math.abs(yDiff) > this.aiPaddle.displayHeight * 0.1) {
+        if (Math.abs(yDiff) > paddleHeight * 0.1) {
             if (yDiff < 0) {
-                this.aiPaddle.body.setVelocityY(-this.aiPaddleSpeed);
+                this.aiPaddlePhysics.body.setVelocityY(-this.aiPaddleSpeed); // Move physics body
             }
             else {
-                this.aiPaddle.body.setVelocityY(this.aiPaddleSpeed);
+                this.aiPaddlePhysics.body.setVelocityY(this.aiPaddleSpeed); // Move physics body
             }
         }
          else {
-             this.aiPaddle.body.setVelocityY(0);
+             this.aiPaddlePhysics.body.setVelocityY(0); // Stop physics body
          }
+        // Sync Graphics with Physics Zone
+        this.aiPaddleGraphics.x = this.aiPaddlePhysics.body.x;
+        this.aiPaddleGraphics.y = this.aiPaddlePhysics.body.y;
     }
 
     // --- toggleSound method starts here (ensure it's outside update) ---
@@ -307,10 +331,10 @@ class GameScene extends Phaser.Scene {
             newSpeedY = Phaser.Math.Between(-50, 50);
         }
 
-        if (paddle === this.playerPaddle) {
+        if (paddle === this.playerPaddlePhysics) {
             ball.body.setVelocity(currentSpeedX, newSpeedY);
         }
-        else if (paddle === this.aiPaddle) {
+        else if (paddle === this.aiPaddlePhysics) {
             ball.body.setVelocity(-currentSpeedX, newSpeedY);
         }
     }
@@ -358,8 +382,8 @@ class GameScene extends Phaser.Scene {
         this.gameOver = true;
         this.ball.body.stop();
         this.ball.setVisible(false);
-        this.playerPaddle.body.stop();
-        this.aiPaddle.body.stop();
+        this.playerPaddlePhysics.body.stop();
+        this.aiPaddlePhysics.body.stop();
 
         let message = '';
         if (winner === 'player') {
@@ -395,11 +419,24 @@ class GameScene extends Phaser.Scene {
         this.gameOver = false;
 
         // Optional: Reset paddle positions (to center?)
-        // this.playerPaddle.setPosition(100, this.sys.game.config.height / 2);
-        // this.aiPaddle.setPosition(this.sys.game.config.width - 100, this.sys.game.config.height / 2);
+        // this.playerPaddlePhysics.setPosition(100, this.sys.game.config.height / 2);
+        // this.aiPaddlePhysics.setPosition(this.sys.game.config.width - 100, this.sys.game.config.height / 2);
 
         // Serve the ball again
         this.resetBall(Math.random() < 0.5); // Random serve direction
+    }
+
+    // --- Paddle Drawing with Gradient ---
+    drawPaddleGraphics(graphics, x, y, width, height, color) {
+        graphics.clear();
+
+        // Define gradient colors (slightly darker version for bottom)
+        const topColor = new Phaser.Display.Color().setFromRGB(Phaser.Display.Color.ValueToColor(color));
+        const bottomColor = topColor.clone().darken(30);
+
+        graphics.fillGradientStyle(topColor.color, topColor.color, bottomColor.color, bottomColor.color, 1); // Vertical gradient
+        graphics.fillRect(0, 0, width, height); // Draw relative to graphics object origin
+        graphics.setPosition(x - width / 2, y - height / 2); // Position graphics object correctly (origin is top-left)
     }
 
     // --- Grid Drawing Logic ---
