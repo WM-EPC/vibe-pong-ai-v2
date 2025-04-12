@@ -34,7 +34,8 @@ class GameScene extends Phaser.Scene {
         // Audio State
         this.music = null; // Will be created on demand
         this.audioInitialized = false;
-        this.soundButton = null;
+        this.soundButtonContainer = null; // Graphics for container
+        this.soundButtonText = null; // Text object "SOUND"
         this.soundIndicator = null; // Graphics for the indicator dot
         this.soundIndicatorOn = false; // State of the indicator
 
@@ -200,35 +201,41 @@ class GameScene extends Phaser.Scene {
         this.playerScoreText = this.add.text(gameWidth * 0.25, 50, '0', scoreTextStyle).setOrigin(0.5);
         this.aiScoreText = this.add.text(gameWidth * 0.75, 50, '0', scoreTextStyle).setOrigin(0.5);
 
-        // --- Sound Toggle Button & Indicator ---
-        const indicatorRadius = 8;
-        const indicatorPadding = 5;
-        const soundButtonTextStyle = {
-            fontSize: '18px',
-            fill: '#' + this.playerColor.toString(16).padStart(6, '0'), // Convert number to hex string
-            fontFamily: '"Courier New", Courier, monospace',
-            shadow: { offsetX: 1, offsetY: 1, color: '#00ffff', blur: 4, stroke: true, fill: true } // Cyan neon glow
+        // --- Sound Button UI --- (New Structure)
+        const soundButtonHeight = 30;
+        const soundButtonWidth = 100;
+        const soundButtonPadding = 10;
+        const soundButtonX = gameWidth - this.boundsInset - soundButtonWidth;
+        const soundButtonY = this.boundsInset;
+
+        // Create Container Graphics
+        this.soundButtonContainer = this.add.graphics({ x: soundButtonX, y: soundButtonY });
+
+        // Create Text (White, Sans-serif, No Glow)
+        const soundTextStyle = {
+            fontSize: '16px',
+            fill: '#ffffff',
+            fontFamily: 'Arial, sans-serif' // Cleaner font
         };
-        // Adjust position to make room for indicator
-        const buttonX = gameWidth - this.boundsInset - indicatorRadius * 2 - indicatorPadding;
-        this.soundButton = this.add.text(buttonX, this.boundsInset, 'SOUND', soundButtonTextStyle)
-            .setOrigin(1, 0) // Anchor top-right
-            .setInteractive();
+        this.soundButtonText = this.add.text(soundButtonX + soundButtonPadding, soundButtonY + soundButtonHeight / 2, 'SOUND', soundTextStyle).setOrigin(0, 0.5);
 
-        this.soundButton.on('pointerdown', this.toggleSound, this);
-
-        // Create indicator graphics object
+        // Create Indicator Graphics
         this.soundIndicator = this.add.graphics();
-        // Position indicator: Calculate based on text center
-        const textCenterY = this.boundsInset + parseInt(soundButtonTextStyle.fontSize) / 2;
-        this.soundIndicator.x = buttonX + indicatorPadding;
-        // this.soundIndicator.y = this.boundsInset + indicatorRadius + 2; // Old calculation
-        this.soundIndicator.y = textCenterY - indicatorRadius; // Align center of indicator with center of text
-        // Add FX padding if using glow
+        // Position will be set within drawSoundButtonUI relative to container
         if (this.sys.game.config.renderType === Phaser.WEBGL) {
-             this.soundIndicator.setFXPadding(4);
+             this.soundIndicator.setFXPadding(4); // Padding for glow
         }
-        this.updateSoundIndicator(false); // Draw initial off state
+
+        // Draw initial state (container + indicator OFF)
+        this.drawSoundButtonUI(false);
+
+        // Make Container interactive
+        this.soundButtonContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, soundButtonWidth, soundButtonHeight), Phaser.Geom.Rectangle.Contains);
+        this.soundButtonContainer.on('pointerdown', this.toggleSound, this);
+
+        // Ensure text & indicator are on top of container
+        this.children.bringToTop(this.soundButtonText);
+        this.children.bringToTop(this.soundIndicator);
 
         // Game Over Text (initially hidden)
         const gameOverStyle = {
@@ -308,56 +315,44 @@ class GameScene extends Phaser.Scene {
         this.aiPaddleGraphics.y = this.aiPaddlePhysics.body.y;
     }
 
-    // --- toggleSound method starts here (ensure it's outside update) ---
     toggleSound() {
         if (!this.audioInitialized) {
             // --- First time: Initialize, PLAY FIRST, then attempt resume ---
             this.audioInitialized = true;
-
+            let soundPlayed = false;
             if (!this.music) {
                 this.music = this.sound.add('music', { loop: true });
             }
-
             if (this.music) {
                 try {
-                    this.music.play(); // Play immediately (synchronous attempt)
-                    this.updateSoundIndicator(true);
-
-                    // We might still be muted if context was suspended, resume should help
+                    this.music.play();
+                    soundPlayed = true;
                 } catch (e) {
                     console.error("Immediate play() call failed:", e);
-                    this.updateSoundIndicator(false); // Show off state on error
-                    // Don't proceed if play fails immediately
-                    return;
+                    soundPlayed = false;
                 }
-
-                // Now, check and resume context if needed (asynchronously)
-                if (this.sound.context.state === 'suspended') {
-                    this.sound.context.resume().then(() => {
-                        // Ensure music isn't muted now that context is running
-                        if(this.music) {
-                            this.music.setMute(false);
-                            // Ensure indicator is on if resume was needed
-                            this.updateSoundIndicator(true);
-                        }
-                    }).catch(e => {
-                        console.error('Audio context resume failed (after play attempt): ', e);
-                    });
-                } else {
-                    // Ensure music isn't muted if context was already running
-                    if(this.music) {
-                        this.music.setMute(false);
-                        // Ensure indicator is on
-                        this.updateSoundIndicator(true);
+                if (soundPlayed) {
+                    if (this.sound.context.state === 'suspended') {
+                        this.sound.context.resume().then(() => {
+                            if(this.music) this.music.setMute(false);
+                            this.drawSoundButtonUI(true);
+                        }).catch(e => {
+                            console.error('Audio context resume failed: ', e);
+                            this.drawSoundButtonUI(false); // Failed to resume, show OFF
+                        });
+                    } else {
+                        if(this.music) this.music.setMute(false);
+                        this.drawSoundButtonUI(true);
                     }
+                } else {
+                    this.drawSoundButtonUI(false); // Play failed, show OFF
                 }
             }
-
         } else {
             // --- Subsequent times: Toggle mute ---
-            if (this.music) { // Check if music exists (it should)
+            if (this.music) {
                 this.music.setMute(!this.music.mute);
-                this.updateSoundIndicator(!this.music.mute);
+                this.drawSoundButtonUI(!this.music.mute);
             }
         }
     }
@@ -538,27 +533,60 @@ class GameScene extends Phaser.Scene {
          }
     }
 
-    // --- Sound Indicator Drawing Logic ---
-    updateSoundIndicator(isOn) {
+    // --- Sound Button UI Drawing Logic ---
+    drawSoundButtonUI(isOn) {
+        const container = this.soundButtonContainer;
+        const width = 100;
+        const height = 30;
+        const cornerRadius = 10;
+        const outlineColor = this.playerColor; // Cyan
+        const fillColor = 0x000000; // Black
+
+        // Update state variable
         this.soundIndicatorOn = isOn;
+
+        // Draw Container
+        container.clear();
+        container.fillStyle(fillColor, 0.8); // Slightly transparent black
+        container.fillRoundedRect(0, 0, width, height, cornerRadius);
+        container.lineStyle(2, outlineColor, 1);
+        container.strokeRoundedRect(0, 0, width, height, cornerRadius);
+
+        // Draw Indicator (relative to container top-left at 0,0)
+        const indicatorRadius = 8;
+        const indicatorPadding = 10;
+        const indicatorX = width - indicatorPadding - indicatorRadius; // Position inside right edge
+        const indicatorY = height / 2; // Center vertically
+        this.updateSoundIndicator(isOn, indicatorX, indicatorY); // Pass position
+
+        // Ensure text and indicator are drawn on top
+        this.children.bringToTop(this.soundButtonText);
+        this.children.bringToTop(this.soundIndicator);
+    }
+
+    // --- Sound Indicator Drawing Logic (Simplified) ---
+    updateSoundIndicator(isOn, x, y) { // Now takes position
         this.soundIndicator.clear();
+        // Set position based on container
+        this.soundIndicator.x = this.soundButtonContainer.x;
+        this.soundIndicator.y = this.soundButtonContainer.y;
+
         const radius = 8;
         const indicatorColor = this.playerColor; // Cyan
         const offColor = 0x555555; // Grey
 
         if (isOn) {
             this.soundIndicator.fillStyle(indicatorColor, 1);
-            this.soundIndicator.fillCircle(radius, radius, radius);
-            // Optional: Add glow to indicator?
+            this.soundIndicator.fillCircle(x, y, radius); // Use passed coords
             if (this.sys.game.config.renderType === Phaser.WEBGL) {
-                this.soundIndicator.postFX.addGlow(indicatorColor, 1, 0, false, 0.1, 16);
+                // Make glow slightly less intense?
+                this.soundIndicator.postFX.addGlow(indicatorColor, 0.8, 0, false, 0.1, 16);
             }
         } else {
             this.soundIndicator.lineStyle(2, offColor, 1);
-            this.soundIndicator.strokeCircle(radius, radius, radius);
-            // Optional: Clear glow?
+            this.soundIndicator.strokeCircle(x, y, radius); // Use passed coords
             if (this.sys.game.config.renderType === Phaser.WEBGL) {
-                this.soundIndicator.postFX.clear(); // Clear glow effect when turning off
+                this.soundIndicator.postFX.clear();
             }
         }
     }
