@@ -32,11 +32,19 @@ class GameScene extends Phaser.Scene {
         this.music = null; // Will be created on demand
         this.audioInitialized = false;
         this.soundButton = null;
+
+        // Grid properties
+        this.gridGraphics = null;
+        this.gridColor = 0x00ffff; // Cyan color
+        this.gridLines = 20; // Number of horizontal lines
+        this.gridScrollY = 0;
+        this.gridScrollSpeed = 0.5; // Slower scroll speed
+        this.perspectivePointY = 0; // Vanishing point Y (relative to center)
     }
 
     preload() {
         // Load assets here (images, audio)
-        console.log("Preloading assets in GameScene...");
+        // console.log("Preloading assets in GameScene...");
 
         // Load background music (Revert to original mp3)
         this.load.audio('music', 'assets/audio/sample-track.mp3');
@@ -44,11 +52,16 @@ class GameScene extends Phaser.Scene {
 
     create() {
         // Set up game objects here (paddles, ball)
-        console.log("Creating game objects in GameScene...");
+        // console.log("Creating game objects in GameScene...");
 
         // Game dimensions
         const gameWidth = this.sys.game.config.width;
         const gameHeight = this.sys.game.config.height;
+
+        // --- Create Grid Background (Draw first, so it's behind other elements) ---
+        this.gridGraphics = this.add.graphics();
+        this.perspectivePointY = gameHeight * 0.4; // Vanishing point slightly above center
+        this.drawGrid(); // Draw initial grid
 
         // Create Player Paddle (left side)
         const paddleWidth = 15;
@@ -56,7 +69,7 @@ class GameScene extends Phaser.Scene {
         const paddleX = 100; // MOVED INWARD: Increased distance from the left edge
         const paddleY = gameHeight / 2; // Center vertically
 
-        this.playerPaddle = this.add.rectangle(paddleX, paddleY, paddleWidth, paddleHeight, 0xffffff); // White color
+        this.playerPaddle = this.add.rectangle(paddleX, paddleY, paddleWidth, paddleHeight, 0x00ffff); // Cyan Player
         this.physics.add.existing(this.playerPaddle); // Add physics body
 
         // Configure paddle physics
@@ -98,7 +111,7 @@ class GameScene extends Phaser.Scene {
 
         // --- Create Ball ---
         const ballSize = 15;
-        this.ball = this.add.circle(gameWidth / 2, gameHeight / 2, ballSize / 2, 0xffffff);
+        this.ball = this.add.circle(gameWidth / 2, gameHeight / 2, ballSize / 2, 0xffff00); // Yellow Ball
         this.physics.add.existing(this.ball);
 
         // Configure ball physics
@@ -123,7 +136,7 @@ class GameScene extends Phaser.Scene {
 
         // --- Create AI Paddle (right side) ---
         const aiPaddleX = gameWidth - 100;
-        this.aiPaddle = this.add.rectangle(aiPaddleX, paddleY, paddleWidth, paddleHeight, 0xffffff);
+        this.aiPaddle = this.add.rectangle(aiPaddleX, paddleY, paddleWidth, paddleHeight, 0xff00ff); // Pink AI
         this.physics.add.existing(this.aiPaddle);
         this.aiPaddle.body.setImmovable(true);
 
@@ -169,6 +182,11 @@ class GameScene extends Phaser.Scene {
             return;
         }
 
+        // --- Update Grid Scroll ---
+        const gameHeight = this.sys.game.config.height; // Define gameHeight if not accessible otherwise
+        this.gridScrollY = (this.gridScrollY + this.gridScrollSpeed) % (gameHeight * 2); // Modulo arithmetic for looping scroll
+        this.drawGrid();
+
         // --- Player Paddle Movement ---
         this.playerPaddle.body.setVelocityY(0);
 
@@ -206,6 +224,51 @@ class GameScene extends Phaser.Scene {
          else {
              this.aiPaddle.body.setVelocityY(0);
          }
+    }
+
+    // --- toggleSound method starts here (ensure it's outside update) ---
+    toggleSound() {
+        if (!this.audioInitialized) {
+            // --- First time: Initialize, PLAY FIRST, then attempt resume ---
+            this.audioInitialized = true;
+
+            if (!this.music) {
+                this.music = this.sound.add('music', { loop: true });
+            }
+
+            if (this.music) {
+                try {
+                    this.music.play(); // Play immediately (synchronous attempt)
+                    this.soundButton.setText('[SOUND OFF]');
+                    // We might still be muted if context was suspended, resume should help
+                } catch (e) {
+                    console.error("Immediate play() call failed:", e);
+                    this.soundButton.setText('[PLAY ERR]');
+                    // Don't proceed if play fails immediately
+                    return;
+                }
+
+                // Now, check and resume context if needed (asynchronously)
+                if (this.sound.context.state === 'suspended') {
+                    this.sound.context.resume().then(() => {
+                        // Ensure music isn't muted now that context is running
+                        if(this.music) this.music.setMute(false);
+                    }).catch(e => {
+                        console.error('Audio context resume failed (after play attempt): ', e);
+                    });
+                } else {
+                    // Ensure music isn't muted if context was already running
+                    if(this.music) this.music.setMute(false);
+                }
+            }
+
+        } else {
+            // --- Subsequent times: Toggle mute ---
+            if (this.music) { // Check if music exists (it should)
+                this.music.setMute(!this.music.mute);
+                this.soundButton.setText(this.music.mute ? '[SOUND ON]' : '[SOUND OFF]');
+            }
+        }
     }
 
     handlePaddleBallCollision(ball, paddle) {
@@ -292,48 +355,53 @@ class GameScene extends Phaser.Scene {
         this.gameOverText.setVisible(true);
     }
 
-    toggleSound() {
-        if (!this.audioInitialized) {
-            // --- First time: Initialize, PLAY FIRST, then attempt resume ---
-            this.audioInitialized = true;
+    // --- Grid Drawing Logic ---
+    drawGrid() {
+        this.gridGraphics.clear();
+        this.gridGraphics.lineStyle(1, this.gridColor, 0.5); // Thinner lines, slightly transparent
 
-            if (!this.music) {
-                this.music = this.sound.add('music', { loop: true });
-            }
+        const gameWidth = this.sys.game.config.width;
+        const gameHeight = this.sys.game.config.height;
+        const horizonY = this.perspectivePointY; // Use the defined perspective point
+        const centerXinVP = gameWidth / 2; // Vanishing point X (center)
 
-            if (this.music) {
-                try {
-                    this.music.play(); // Play immediately (synchronous attempt)
-                    this.soundButton.setText('[SOUND OFF]');
-                    // We might still be muted if context was suspended, resume should help
-                } catch (e) {
-                    console.error("Immediate play() call failed:", e);
-                    this.soundButton.setText('[PLAY ERR]');
-                    // Don't proceed if play fails immediately
-                    return;
-                }
+        // --- Draw Horizontal Lines ---
+        for (let i = 0; i < this.gridLines; i++) {
+            // Calculate y position with perspective and incorporating scroll
+            // Map the linear scroll offset to the perspective scale
+            const scrollOffset = (this.gridScrollY / (gameHeight * 2)) * this.gridLines;
+            const lineIndexWithScroll = i + scrollOffset;
+            const perspectiveProgress = (lineIndexWithScroll % this.gridLines) / this.gridLines;
 
-                // Now, check and resume context if needed (asynchronously)
-                if (this.sound.context.state === 'suspended') {
-                    this.sound.context.resume().then(() => {
-                        // Ensure music isn't muted now that context is running
-                        if(this.music) this.music.setMute(false);
-                    }).catch(e => {
-                        console.error('Audio context resume failed (after play attempt): ', e);
-                    });
-                } else {
-                    // Ensure music isn't muted if context was already running
-                    if(this.music) this.music.setMute(false);
-                }
-            }
+            // Use exponential scaling for perspective (closer lines more spaced out)
+            const y = horizonY + (gameHeight - horizonY) * Math.pow(perspectiveProgress, 2);
 
-        } else {
-            // --- Subsequent times: Toggle mute ---
-            if (this.music) { // Check if music exists (it should)
-                this.music.setMute(!this.music.mute);
-                this.soundButton.setText(this.music.mute ? '[SOUND ON]' : '[SOUND OFF]');
+            if (y >= horizonY && y <= gameHeight) { // Draw only below horizon and on screen
+                // Calculate line width based on perspective (lines get shorter near horizon)
+                const widthFactor = (y - horizonY) / (gameHeight - horizonY);
+                const currentLineWidth = gameWidth * widthFactor;
+                const startX = centerXinVP - currentLineWidth / 2;
+                const endX = centerXinVP + currentLineWidth / 2;
+
+                this.gridGraphics.lineBetween(startX, y, endX, y);
             }
         }
+
+        // --- Draw Vertical Lines (Radiating from center vanishing point) ---
+        const numVerticalLines = 30; // More vertical lines
+        this.gridGraphics.lineStyle(1, this.gridColor, 0.3); // Make vertical lines fainter
+        for (let i = 0; i <= numVerticalLines; i++) {
+             // Calculate x position at the bottom edge of the screen
+             // Distribute lines more densely near the center for better perspective feel
+             const normalizedIndex = i / numVerticalLines; // 0 to 1
+             const perspectiveRatio = Math.pow(normalizedIndex - 0.5, 3) * 2 + 0.5; // Cubic function centered at 0.5
+             let x = perspectiveRatio * gameWidth;
+
+             // Clamp x to be within screen bounds just in case
+             x = Phaser.Math.Clamp(x, 0, gameWidth);
+
+             this.gridGraphics.lineBetween(x, gameHeight, centerXinVP, horizonY);
+         }
     }
 }
 
@@ -358,4 +426,4 @@ const config = {
 };
 
 // Initialize the Game
-const game = new Phaser.Game(config); 
+const game = new Phaser.Game(config);
