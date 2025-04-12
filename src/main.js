@@ -221,7 +221,12 @@ class GameScene extends Phaser.Scene {
 
         // Create Indicator Graphics
         this.soundIndicator = this.add.graphics();
-        // Position will be set within drawSoundButtonUI relative to container
+        // Position will be set within drawSoundButtonUI relative to container - MOVED: Position set here directly
+        const indicatorRadius = 8;
+        const indicatorPadding = 5; // Padding between text and indicator
+        this.soundIndicator.x = soundButtonX + soundButtonWidth - soundButtonPadding - indicatorRadius * 2; // Position based on container right edge
+        this.soundIndicator.y = soundButtonY + soundButtonHeight / 2 - indicatorRadius; // Align vertically with text center
+
         if (this.sys.game.config.renderType === Phaser.WEBGL) {
              this.soundIndicator.setFXPadding(4); // Padding for glow
         }
@@ -557,7 +562,7 @@ class GameScene extends Phaser.Scene {
         const indicatorPadding = 10;
         const indicatorX = width - indicatorPadding - indicatorRadius; // Position inside right edge
         const indicatorY = height / 2; // Center vertically
-        this.updateSoundIndicator(isOn, indicatorX, indicatorY); // Pass position
+        this.updateSoundIndicator(isOn); // Call without position
 
         // Ensure text and indicator are drawn on top
         this.children.bringToTop(this.soundButtonText);
@@ -565,11 +570,11 @@ class GameScene extends Phaser.Scene {
     }
 
     // --- Sound Indicator Drawing Logic (Simplified) ---
-    updateSoundIndicator(isOn, x, y) { // Now takes position
+    updateSoundIndicator(isOn) {
         this.soundIndicator.clear();
-        // Set position based on container
-        this.soundIndicator.x = this.soundButtonContainer.x;
-        this.soundIndicator.y = this.soundButtonContainer.y;
+        // Set position based on container - REMOVED: Position set once in create
+        // this.soundIndicator.x = this.soundButtonContainer.x;
+        // this.soundIndicator.y = this.soundButtonContainer.y;
 
         const radius = 8;
         const indicatorColor = this.playerColor; // Cyan
@@ -577,14 +582,14 @@ class GameScene extends Phaser.Scene {
 
         if (isOn) {
             this.soundIndicator.fillStyle(indicatorColor, 1);
-            this.soundIndicator.fillCircle(x, y, radius); // Use passed coords
+            this.soundIndicator.fillCircle(radius, radius, radius); // Draw relative to origin
             if (this.sys.game.config.renderType === Phaser.WEBGL) {
                 // Make glow slightly less intense?
                 this.soundIndicator.postFX.addGlow(indicatorColor, 0.8, 0, false, 0.1, 16);
             }
         } else {
             this.soundIndicator.lineStyle(2, offColor, 1);
-            this.soundIndicator.strokeCircle(x, y, radius); // Use passed coords
+            this.soundIndicator.strokeCircle(radius, radius, radius); // Draw relative to origin
             if (this.sys.game.config.renderType === Phaser.WEBGL) {
                 this.soundIndicator.postFX.clear();
             }
