@@ -35,6 +35,8 @@ class GameScene extends Phaser.Scene {
         this.music = null; // Will be created on demand
         this.audioInitialized = false;
         this.soundButton = null;
+        this.soundIndicator = null; // Graphics for the indicator dot
+        this.soundIndicatorOn = false; // State of the indicator
 
         // Grid properties
         this.gridGraphics = null;
@@ -83,12 +85,10 @@ class GameScene extends Phaser.Scene {
         this.playerPaddleGraphics = this.add.graphics();
         this.drawPaddleGraphics(this.playerPaddleGraphics, paddleX, paddleY, this.paddleWidth, this.paddleHeight, this.playerColor);
         // Add Glow FX if WebGL is available
-        /* // Temporarily disable Glow FX for debugging
         if (this.sys.game.config.renderType === Phaser.WEBGL) {
             this.playerPaddleGraphics.setFXPadding(4); // Padding for glow
             this.playerPaddleGraphics.postFX.addGlow(this.playerColor, 2, 0, false, 0.1, 32);
         }
-        */
 
         // --- Create Player Paddle Physics Zone (Invisible) ---
         this.playerPaddlePhysics = this.add.zone(paddleX, paddleY, this.paddleWidth, this.paddleHeight);
@@ -159,12 +159,10 @@ class GameScene extends Phaser.Scene {
         this.aiPaddleGraphics = this.add.graphics();
         this.drawPaddleGraphics(this.aiPaddleGraphics, aiPaddleX, paddleY, this.paddleWidth, this.paddleHeight, this.aiColor);
         // Add Glow FX if WebGL is available
-        /* // Temporarily disable Glow FX for debugging
         if (this.sys.game.config.renderType === Phaser.WEBGL) {
             this.aiPaddleGraphics.setFXPadding(4); // Padding for glow
             this.aiPaddleGraphics.postFX.addGlow(this.aiColor, 2, 0, false, 0.1, 32);
         }
-        */
 
         // --- Create AI Paddle Physics Zone (Invisible) ---
         this.aiPaddlePhysics = this.add.zone(aiPaddleX, paddleY, this.paddleWidth, this.paddleHeight);
@@ -198,18 +196,29 @@ class GameScene extends Phaser.Scene {
         this.playerScoreText = this.add.text(gameWidth * 0.25, 50, '0', scoreTextStyle).setOrigin(0.5);
         this.aiScoreText = this.add.text(gameWidth * 0.75, 50, '0', scoreTextStyle).setOrigin(0.5);
 
-        // --- Sound Toggle Button ---
+        // --- Sound Toggle Button & Indicator ---
+        const indicatorRadius = 8;
+        const indicatorPadding = 5;
         const soundButtonTextStyle = {
             fontSize: '18px',
             fill: '#' + this.playerColor.toString(16).padStart(6, '0'), // Convert number to hex string
             fontFamily: '"Courier New", Courier, monospace',
             shadow: { offsetX: 1, offsetY: 1, color: '#00ffff', blur: 4, stroke: true, fill: true } // Cyan neon glow
         };
-        this.soundButton = this.add.text(gameWidth - this.boundsInset, this.boundsInset, '[SOUND ON]', soundButtonTextStyle)
-            .setOrigin(1, 0) // Anchor top-right relative to bounds inset
+        // Adjust position to make room for indicator
+        const buttonX = gameWidth - this.boundsInset - indicatorRadius * 2 - indicatorPadding;
+        this.soundButton = this.add.text(buttonX, this.boundsInset, 'SOUND', soundButtonTextStyle)
+            .setOrigin(1, 0) // Anchor top-right
             .setInteractive();
 
         this.soundButton.on('pointerdown', this.toggleSound, this);
+
+        // Create indicator graphics object
+        this.soundIndicator = this.add.graphics();
+        // Position indicator next to the text
+        this.soundIndicator.x = buttonX + indicatorPadding;
+        this.soundIndicator.y = this.boundsInset + indicatorRadius + 2; // Align vertically roughly with text center
+        this.updateSoundIndicator(false); // Draw initial off state
 
         // Game Over Text (initially hidden)
         const gameOverStyle = {
@@ -302,11 +311,12 @@ class GameScene extends Phaser.Scene {
             if (this.music) {
                 try {
                     this.music.play(); // Play immediately (synchronous attempt)
-                    this.soundButton.setText('[SOUND OFF]');
+                    this.updateSoundIndicator(true);
+
                     // We might still be muted if context was suspended, resume should help
                 } catch (e) {
                     console.error("Immediate play() call failed:", e);
-                    this.soundButton.setText('[PLAY ERR]');
+                    this.updateSoundIndicator(false); // Show off state on error
                     // Don't proceed if play fails immediately
                     return;
                 }
@@ -315,13 +325,21 @@ class GameScene extends Phaser.Scene {
                 if (this.sound.context.state === 'suspended') {
                     this.sound.context.resume().then(() => {
                         // Ensure music isn't muted now that context is running
-                        if(this.music) this.music.setMute(false);
+                        if(this.music) {
+                            this.music.setMute(false);
+                            // Ensure indicator is on if resume was needed
+                            this.updateSoundIndicator(true);
+                        }
                     }).catch(e => {
                         console.error('Audio context resume failed (after play attempt): ', e);
                     });
                 } else {
                     // Ensure music isn't muted if context was already running
-                    if(this.music) this.music.setMute(false);
+                    if(this.music) {
+                        this.music.setMute(false);
+                        // Ensure indicator is on
+                        this.updateSoundIndicator(true);
+                    }
                 }
             }
 
@@ -329,7 +347,7 @@ class GameScene extends Phaser.Scene {
             // --- Subsequent times: Toggle mute ---
             if (this.music) { // Check if music exists (it should)
                 this.music.setMute(!this.music.mute);
-                this.soundButton.setText(this.music.mute ? '[SOUND ON]' : '[SOUND OFF]');
+                this.updateSoundIndicator(!this.music.mute);
             }
         }
     }
@@ -508,6 +526,31 @@ class GameScene extends Phaser.Scene {
 
              this.gridGraphics.lineBetween(x, gameHeight, centerXinVP, horizonY);
          }
+    }
+
+    // --- Sound Indicator Drawing Logic ---
+    updateSoundIndicator(isOn) {
+        this.soundIndicatorOn = isOn;
+        this.soundIndicator.clear();
+        const radius = 8;
+        const indicatorColor = this.playerColor; // Cyan
+        const offColor = 0x555555; // Grey
+
+        if (isOn) {
+            this.soundIndicator.fillStyle(indicatorColor, 1);
+            this.soundIndicator.fillCircle(radius, radius, radius);
+            // Optional: Add glow to indicator?
+            // if (this.sys.game.config.renderType === Phaser.WEBGL) {
+            //     this.soundIndicator.postFX.addGlow(indicatorColor, 1, 0, false, 0.1, 16);
+            // }
+        } else {
+            this.soundIndicator.lineStyle(2, offColor, 1);
+            this.soundIndicator.strokeCircle(radius, radius, radius);
+            // Optional: Clear glow?
+            // if (this.sys.game.config.renderType === Phaser.WEBGL) {
+            //     this.soundIndicator.postFX.clear();
+            // }
+        }
     }
 }
 
