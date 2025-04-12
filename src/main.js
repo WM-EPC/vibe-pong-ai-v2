@@ -48,6 +48,10 @@ class GameScene extends Phaser.Scene {
         this.playerColor = 0x00ffff; // Cyan
         this.aiColor = 0xff00ff; // Pink
         this.ballColor = 0xffff00; // Yellow
+
+        // Paddle properties
+        this.paddleWidth = 15;
+        this.paddleHeight = 100;
     }
 
     preload() {
@@ -72,17 +76,15 @@ class GameScene extends Phaser.Scene {
         this.drawGrid(); // Draw initial grid
 
         // Create Player Paddle (left side)
-        const paddleWidth = 15;
-        const paddleHeight = 100;
         const paddleX = 100; // MOVED INWARD: Increased distance from the left edge
         const paddleY = gameHeight / 2; // Center vertically
 
         // --- Create Player Paddle Graphics ---
         this.playerPaddleGraphics = this.add.graphics();
-        this.drawPaddleGraphics(this.playerPaddleGraphics, paddleX, paddleY, paddleWidth, paddleHeight, this.playerColor);
+        this.drawPaddleGraphics(this.playerPaddleGraphics, paddleX, paddleY, this.paddleWidth, this.paddleHeight, this.playerColor);
 
         // --- Create Player Paddle Physics Zone (Invisible) ---
-        this.playerPaddlePhysics = this.add.zone(paddleX, paddleY, paddleWidth, paddleHeight);
+        this.playerPaddlePhysics = this.add.zone(paddleX, paddleY, this.paddleWidth, this.paddleHeight);
         this.physics.add.existing(this.playerPaddlePhysics);
         this.playerPaddlePhysics.body.setImmovable(true);
         this.playerPaddlePhysics.body.setCollideWorldBounds(true);
@@ -92,7 +94,7 @@ class GameScene extends Phaser.Scene {
         this.keyW = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
         this.keyS = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
 
-        const zoneWidth = paddleX + (paddleWidth / 2);
+        const zoneWidth = paddleX + (this.paddleWidth / 2);
         const zoneX = 0;
         this.inputZone = this.add.zone(zoneX, 0, zoneWidth, gameHeight).setOrigin(0, 0).setInteractive();
         this.input.setDraggable(this.inputZone);
@@ -148,10 +150,10 @@ class GameScene extends Phaser.Scene {
         // --- Create AI Paddle (right side) ---
         const aiPaddleX = gameWidth - 100;
         this.aiPaddleGraphics = this.add.graphics();
-        this.drawPaddleGraphics(this.aiPaddleGraphics, aiPaddleX, paddleY, paddleWidth, paddleHeight, this.aiColor);
+        this.drawPaddleGraphics(this.aiPaddleGraphics, aiPaddleX, paddleY, this.paddleWidth, this.paddleHeight, this.aiColor);
 
         // --- Create AI Paddle Physics Zone (Invisible) ---
-        this.aiPaddlePhysics = this.add.zone(aiPaddleX, paddleY, paddleWidth, paddleHeight);
+        this.aiPaddlePhysics = this.add.zone(aiPaddleX, paddleY, this.paddleWidth, this.paddleHeight);
         this.physics.add.existing(this.aiPaddlePhysics);
         this.aiPaddlePhysics.body.setImmovable(true);
         // No need for collide world bounds on AI typically, but fine to leave
@@ -225,11 +227,11 @@ class GameScene extends Phaser.Scene {
         this.playerPaddlePhysics.body.setVelocityY(0); // Move the physics body
 
         if (this.activePointer && this.activePointer.isDown) {
-            const minY = paddleHeight / 2; // Use paddleHeight directly
-            const maxY = this.sys.game.config.height - paddleHeight / 2;
+            const minY = this.paddleHeight / 2; // Use this.paddleHeight
+            const maxY = this.sys.game.config.height - this.paddleHeight / 2; // Use this.paddleHeight
             const targetY = Phaser.Math.Clamp(this.activePointer.y, minY, maxY);
             // Move the physics body towards the target Y
-            this.physics.moveTo(this.playerPaddlePhysics, this.playerPaddlePhysics.body.x + paddleWidth / 2, targetY, null, 75);
+            this.physics.moveTo(this.playerPaddlePhysics, this.playerPaddlePhysics.body.x + this.paddleWidth / 2, targetY, null, 75); // Use this.paddleWidth
             this.isDraggingPaddle = true;
         }
         else {
@@ -250,9 +252,9 @@ class GameScene extends Phaser.Scene {
         this.playerPaddleGraphics.y = this.playerPaddlePhysics.body.y;
 
         // --- AI Paddle Movement ---
-        const yDiff = this.ball.y - (this.aiPaddlePhysics.body.y + paddleHeight / 2); // Compare ball Y to AI physics body center Y
+        const yDiff = this.ball.y - (this.aiPaddlePhysics.body.y + this.paddleHeight / 2); // Use this.paddleHeight
 
-        if (Math.abs(yDiff) > paddleHeight * 0.1) {
+        if (Math.abs(yDiff) > this.paddleHeight * 0.1) { // Use this.paddleHeight
             if (yDiff < 0) {
                 this.aiPaddlePhysics.body.setVelocityY(-this.aiPaddleSpeed); // Move physics body
             }
