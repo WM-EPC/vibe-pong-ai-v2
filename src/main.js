@@ -434,7 +434,7 @@ class GameScene extends Phaser.Scene {
 
         // Define gradient colors (slightly darker version for bottom)
         const topColor = new Phaser.Display.Color().setFromRGB(Phaser.Display.Color.ValueToColor(color));
-        const bottomColor = topColor.clone().darken(30);
+        const bottomColor = topColor.clone().darken(80); // Increased darkening for more contrast
 
         graphics.fillGradientStyle(topColor.color, topColor.color, bottomColor.color, bottomColor.color, 1); // Vertical gradient
         graphics.fillRect(0, 0, width, height); // Draw relative to graphics object origin
