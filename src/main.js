@@ -229,9 +229,9 @@ class GameScene extends Phaser.Scene {
         this.soundIndicator.x = soundButtonX + soundButtonWidth - soundButtonPadding - indicatorRadius * 2; // Position based on container right edge
         this.soundIndicator.y = soundButtonY + soundButtonHeight / 2 - indicatorRadius; // Align vertically with text center
 
-        if (this.sys.game.config.renderType === Phaser.WEBGL) {
-             this.soundIndicator.setFXPadding(4); // Padding for glow
-        }
+        // if (this.sys.game.config.renderType === Phaser.WEBGL) {
+        //      this.soundIndicator.setFXPadding(4); // Padding for glow - Temporarily disable
+        // }
 
         // Draw initial state (container + indicator OFF)
         this.drawSoundButtonUI(false);
@@ -581,16 +581,16 @@ class GameScene extends Phaser.Scene {
         if (isOn) {
             this.soundIndicator.fillStyle(indicatorColor, 1);
             this.soundIndicator.fillCircle(radius, radius, radius); // Draw relative to origin
-            if (this.sys.game.config.renderType === Phaser.WEBGL) {
-                // Make glow slightly less intense?
-                this.soundIndicator.postFX.addGlow(indicatorColor, 0.8, 0, false, 0.1, 16);
-            }
+            // if (this.sys.game.config.renderType === Phaser.WEBGL) {
+            //     // Make glow slightly less intense?
+            //     this.soundIndicator.postFX.addGlow(indicatorColor, 0.8, 0, false, 0.1, 16); // Temporarily disable
+            // }
         } else {
             this.soundIndicator.lineStyle(2, offColor, 1);
             this.soundIndicator.strokeCircle(radius, radius, radius); // Draw relative to origin
-            if (this.sys.game.config.renderType === Phaser.WEBGL) {
-                this.soundIndicator.postFX.clear();
-            }
+            // if (this.sys.game.config.renderType === Phaser.WEBGL) {
+            //     this.soundIndicator.postFX.clear(); // Temporarily disable
+            // }
         }
     }
 }
