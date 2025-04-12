@@ -217,7 +217,9 @@ class GameScene extends Phaser.Scene {
             fill: '#ffffff',
             fontFamily: 'Arial, sans-serif' // Cleaner font
         };
-        this.soundButtonText = this.add.text(soundButtonX + soundButtonPadding, soundButtonY + soundButtonHeight / 2, 'SOUND', soundTextStyle).setOrigin(0, 0.5);
+        this.soundButtonText = this.add.text(soundButtonX + soundButtonPadding, soundButtonY + soundButtonHeight / 2, 'SOUND', soundTextStyle)
+            .setOrigin(0, 0.5)
+            .setInteractive(); // Make TEXT interactive again
 
         // Create Indicator Graphics
         this.soundIndicator = this.add.graphics();
@@ -234,13 +236,8 @@ class GameScene extends Phaser.Scene {
         // Draw initial state (container + indicator OFF)
         this.drawSoundButtonUI(false);
 
-        // Make Container interactive
-        this.soundButtonContainer.setInteractive(new Phaser.Geom.Rectangle(0, 0, soundButtonWidth, soundButtonHeight), Phaser.Geom.Rectangle.Contains);
-        this.soundButtonContainer.on('pointerdown', this.toggleSound, this);
-
-        // Ensure text & indicator are on top of container
-        this.children.bringToTop(this.soundButtonText);
-        this.children.bringToTop(this.soundIndicator);
+        // Attach listener to TEXT again
+        this.soundButtonText.on('pointerdown', this.toggleSound, this);
 
         // Game Over Text (initially hidden)
         const gameOverStyle = {
@@ -263,6 +260,7 @@ class GameScene extends Phaser.Scene {
     }
 
     update(time, delta) {
+        console.log('Update loop running'); // DEBUG
         // --- Stop updates if game over ---
         if (this.gameOver) {
             return;
