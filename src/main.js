@@ -201,7 +201,7 @@ class GameScene extends Phaser.Scene {
         // --- Sound Toggle Button ---
         const soundButtonTextStyle = {
             fontSize: '18px',
-            fill: this.playerColor, // Use player color number directly
+            fill: '#' + this.playerColor.toString(16).padStart(6, '0'), // Convert number to hex string
             fontFamily: '"Courier New", Courier, monospace',
             shadow: { offsetX: 1, offsetY: 1, color: '#00ffff', blur: 4, stroke: true, fill: true } // Cyan neon glow
         };
