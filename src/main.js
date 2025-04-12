@@ -482,14 +482,9 @@ class GameScene extends Phaser.Scene {
     drawPaddleGraphics(graphics, x, y, width, height, color) {
         graphics.clear();
 
-        // Revert to solid color fill
+        // Revert to solid color fill ONLY
         graphics.fillStyle(color, 1); // Solid color, full alpha
         graphics.fillRect(0, 0, width, height); // Draw fill relative to graphics object origin
-
-        // Add an outline
-        const outlineColor = Phaser.Display.Color.ValueToColor(color).darken(50).color; // Darker shade for outline
-        graphics.lineStyle(2, outlineColor, 1); // 2px thick outline
-        graphics.strokeRect(0, 0, width, height); // Draw outline relative to graphics object origin
 
         graphics.setPosition(x - width / 2, y - height / 2); // Position graphics object correctly (origin is top-left)
     }
