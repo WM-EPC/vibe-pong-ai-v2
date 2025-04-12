@@ -136,6 +136,11 @@ class GameScene extends Phaser.Scene {
         const ballSize = 15;
         this.ball = this.add.circle(gameWidth / 2, gameHeight / 2, ballSize / 2, this.ballColor);
         this.physics.add.existing(this.ball);
+        // Add Glow FX to ball if WebGL
+        if (this.sys.game.config.renderType === Phaser.WEBGL) {
+            this.ball.setFXPadding(4);
+            this.ball.postFX.addGlow(this.ballColor, 1, 0, false, 0.1, 24);
+        }
 
         // Configure ball physics
         this.ball.body.setCollideWorldBounds(true); // Re-enabled - should respect physics.world.setBounds
