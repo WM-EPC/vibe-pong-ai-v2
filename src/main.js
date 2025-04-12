@@ -293,21 +293,17 @@ class GameScene extends Phaser.Scene {
     }
 
     toggleSound() {
-        console.log("toggleSound() called!");
         if (!this.audioInitialized) {
             // --- First time: Initialize, PLAY FIRST, then attempt resume ---
             this.audioInitialized = true;
 
             if (!this.music) {
-                console.log("Adding music object...");
                 this.music = this.sound.add('music', { loop: true });
             }
 
             if (this.music) {
-                console.log("Attempting immediate music play...");
                 try {
                     this.music.play(); // Play immediately (synchronous attempt)
-                    console.log("Immediate play call successful (may not mean audio is heard yet).");
                     this.soundButton.setText('[SOUND OFF]');
                     // We might still be muted if context was suspended, resume should help
                 } catch (e) {
@@ -319,16 +315,13 @@ class GameScene extends Phaser.Scene {
 
                 // Now, check and resume context if needed (asynchronously)
                 if (this.sound.context.state === 'suspended') {
-                    console.log('Context suspended, attempting resume after play()...');
                     this.sound.context.resume().then(() => {
-                        console.log('Audio Context Resumed successfully (after play attempt).');
                         // Ensure music isn't muted now that context is running
                         if(this.music) this.music.setMute(false);
                     }).catch(e => {
                         console.error('Audio context resume failed (after play attempt): ', e);
                     });
                 } else {
-                    console.log('Context was already running.');
                     // Ensure music isn't muted if context was already running
                     if(this.music) this.music.setMute(false);
                 }
