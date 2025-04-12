@@ -27,6 +27,7 @@ class GameScene extends Phaser.Scene {
         this.winningScore = 11;
         this.gameOver = false;
         this.gameOverText = null;
+        this.restartText = null; // Add restart text variable
 
         // Audio State
         this.music = null; // Will be created on demand
@@ -156,7 +157,12 @@ class GameScene extends Phaser.Scene {
         }).setOrigin(0, 1);
 
         // --- Score Text ---
-        const scoreTextStyle = { fontSize: '48px', fill: '#fff' };
+        const scoreTextStyle = {
+            fontSize: '48px',
+            fill: '#ffffff',
+            fontFamily: '"Courier New", Courier, monospace', // Monospaced font for retro feel
+            shadow: { offsetX: 2, offsetY: 2, color: '#0000ff', blur: 5, stroke: true, fill: true } // Blue neon glow
+        };
         this.playerScoreText = this.add.text(gameWidth * 0.25, 50, '0', scoreTextStyle).setOrigin(0.5);
         this.aiScoreText = this.add.text(gameWidth * 0.75, 50, '0', scoreTextStyle).setOrigin(0.5);
 
@@ -169,11 +175,23 @@ class GameScene extends Phaser.Scene {
         this.soundButton.on('pointerdown', this.toggleSound, this);
 
         // Game Over Text (initially hidden)
-        this.gameOverText = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2, '', {
+        const gameOverStyle = {
             fontSize: '64px',
             fill: '#ff0000',
+            fontFamily: '"Courier New", Courier, monospace',
+            align: 'center',
+            shadow: { offsetX: 3, offsetY: 3, color: '#800000', blur: 8, stroke: true, fill: true } // Dark red glow
+        };
+        this.gameOverText = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2, '', gameOverStyle).setOrigin(0.5).setVisible(false);
+
+        // Restart Text (initially hidden)
+        const restartTextStyle = {
+            fontSize: '24px',
+            fill: '#ffffff',
+            fontFamily: '"Courier New", Courier, monospace',
             align: 'center'
-        }).setOrigin(0.5).setVisible(false);
+        };
+        this.restartText = this.add.text(this.sys.game.config.width / 2, this.sys.game.config.height / 2 + 60, 'Click to Restart', restartTextStyle).setOrigin(0.5).setVisible(false);
     }
 
     update(time, delta) {
@@ -353,6 +371,35 @@ class GameScene extends Phaser.Scene {
 
         this.gameOverText.setText(message);
         this.gameOverText.setVisible(true);
+        this.restartText.setVisible(true); // Show restart text
+
+        // Listen for a click/tap to restart
+        this.input.once('pointerdown', this.restartGame, this);
+    }
+
+    restartGame() {
+        // Prevent further restarts if clicked multiple times quickly
+        this.input.removeListener('pointerdown', this.restartGame, this);
+
+        // Reset scores
+        this.playerScore = 0;
+        this.aiScore = 0;
+        this.playerScoreText.setText('0');
+        this.aiScoreText.setText('0');
+
+        // Hide game over messages
+        this.gameOverText.setVisible(false);
+        this.restartText.setVisible(false);
+
+        // Reset game state
+        this.gameOver = false;
+
+        // Optional: Reset paddle positions (to center?)
+        // this.playerPaddle.setPosition(100, this.sys.game.config.height / 2);
+        // this.aiPaddle.setPosition(this.sys.game.config.width - 100, this.sys.game.config.height / 2);
+
+        // Serve the ball again
+        this.resetBall(Math.random() < 0.5); // Random serve direction
     }
 
     // --- Grid Drawing Logic ---
