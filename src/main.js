@@ -201,11 +201,9 @@ class GameScene extends Phaser.Scene {
         // --- Sound Toggle Button ---
         const soundButtonTextStyle = {
             fontSize: '18px',
-            fill: '#ffffff',
+            fill: this.playerColor, // Use player color number directly
             fontFamily: '"Courier New", Courier, monospace',
-            // Removed background and padding
-            // backgroundColor: '#555', padding: { left: 5, right: 5, top: 2, bottom: 2 }
-            shadow: { offsetX: 1, offsetY: 1, color: '#cccccc', blur: 2, stroke: false, fill: true } // Subtle white/grey glow
+            shadow: { offsetX: 1, offsetY: 1, color: '#00ffff', blur: 4, stroke: true, fill: true } // Cyan neon glow
         };
         this.soundButton = this.add.text(gameWidth - this.boundsInset, this.boundsInset, '[SOUND ON]', soundButtonTextStyle)
             .setOrigin(1, 0) // Anchor top-right relative to bounds inset
