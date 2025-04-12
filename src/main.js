@@ -219,9 +219,15 @@ class GameScene extends Phaser.Scene {
 
         // Create indicator graphics object
         this.soundIndicator = this.add.graphics();
-        // Position indicator next to the text
+        // Position indicator: Calculate based on text center
+        const textCenterY = this.boundsInset + parseInt(soundButtonTextStyle.fontSize) / 2;
         this.soundIndicator.x = buttonX + indicatorPadding;
-        this.soundIndicator.y = this.boundsInset + indicatorRadius + 2; // Align vertically roughly with text center
+        // this.soundIndicator.y = this.boundsInset + indicatorRadius + 2; // Old calculation
+        this.soundIndicator.y = textCenterY - indicatorRadius; // Align center of indicator with center of text
+        // Add FX padding if using glow
+        if (this.sys.game.config.renderType === Phaser.WEBGL) {
+             this.soundIndicator.setFXPadding(4);
+        }
         this.updateSoundIndicator(false); // Draw initial off state
 
         // Game Over Text (initially hidden)
@@ -544,16 +550,16 @@ class GameScene extends Phaser.Scene {
             this.soundIndicator.fillStyle(indicatorColor, 1);
             this.soundIndicator.fillCircle(radius, radius, radius);
             // Optional: Add glow to indicator?
-            // if (this.sys.game.config.renderType === Phaser.WEBGL) {
-            //     this.soundIndicator.postFX.addGlow(indicatorColor, 1, 0, false, 0.1, 16);
-            // }
+            if (this.sys.game.config.renderType === Phaser.WEBGL) {
+                this.soundIndicator.postFX.addGlow(indicatorColor, 1, 0, false, 0.1, 16);
+            }
         } else {
             this.soundIndicator.lineStyle(2, offColor, 1);
             this.soundIndicator.strokeCircle(radius, radius, radius);
             // Optional: Clear glow?
-            // if (this.sys.game.config.renderType === Phaser.WEBGL) {
-            //     this.soundIndicator.postFX.clear();
-            // }
+            if (this.sys.game.config.renderType === Phaser.WEBGL) {
+                this.soundIndicator.postFX.clear(); // Clear glow effect when turning off
+            }
         }
     }
 }
