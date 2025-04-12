@@ -85,10 +85,12 @@ class GameScene extends Phaser.Scene {
         this.playerPaddleGraphics = this.add.graphics();
         this.drawPaddleGraphics(this.playerPaddleGraphics, paddleX, paddleY, this.paddleWidth, this.paddleHeight, this.playerColor);
         // Add Glow FX if WebGL is available
+        /* // Disable Glow FX - Causing instability
         if (this.sys.game.config.renderType === Phaser.WEBGL) {
             this.playerPaddleGraphics.setFXPadding(4); // Padding for glow
             this.playerPaddleGraphics.postFX.addGlow(this.playerColor, 2, 0, false, 0.1, 32);
         }
+        */
 
         // --- Create Player Paddle Physics Zone (Invisible) ---
         this.playerPaddlePhysics = this.add.zone(paddleX, paddleY, this.paddleWidth, this.paddleHeight);
@@ -159,10 +161,12 @@ class GameScene extends Phaser.Scene {
         this.aiPaddleGraphics = this.add.graphics();
         this.drawPaddleGraphics(this.aiPaddleGraphics, aiPaddleX, paddleY, this.paddleWidth, this.paddleHeight, this.aiColor);
         // Add Glow FX if WebGL is available
+        /* // Disable Glow FX - Causing instability
         if (this.sys.game.config.renderType === Phaser.WEBGL) {
             this.aiPaddleGraphics.setFXPadding(4); // Padding for glow
             this.aiPaddleGraphics.postFX.addGlow(this.aiColor, 2, 0, false, 0.1, 32);
         }
+        */
 
         // --- Create AI Paddle Physics Zone (Invisible) ---
         this.aiPaddlePhysics = this.add.zone(aiPaddleX, paddleY, this.paddleWidth, this.paddleHeight);
