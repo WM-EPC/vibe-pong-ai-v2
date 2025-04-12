@@ -82,6 +82,11 @@ class GameScene extends Phaser.Scene {
         // --- Create Player Paddle Graphics ---
         this.playerPaddleGraphics = this.add.graphics();
         this.drawPaddleGraphics(this.playerPaddleGraphics, paddleX, paddleY, this.paddleWidth, this.paddleHeight, this.playerColor);
+        // Add Glow FX if WebGL is available
+        if (this.sys.game.config.renderType === Phaser.WEBGL) {
+            this.playerPaddleGraphics.setFXPadding(4); // Padding for glow
+            this.playerPaddleGraphics.postFX.addGlow(this.playerColor, 2, 0, false, 0.1, 32);
+        }
 
         // --- Create Player Paddle Physics Zone (Invisible) ---
         this.playerPaddlePhysics = this.add.zone(paddleX, paddleY, this.paddleWidth, this.paddleHeight);
@@ -151,6 +156,11 @@ class GameScene extends Phaser.Scene {
         const aiPaddleX = gameWidth - 100;
         this.aiPaddleGraphics = this.add.graphics();
         this.drawPaddleGraphics(this.aiPaddleGraphics, aiPaddleX, paddleY, this.paddleWidth, this.paddleHeight, this.aiColor);
+        // Add Glow FX if WebGL is available
+        if (this.sys.game.config.renderType === Phaser.WEBGL) {
+            this.aiPaddleGraphics.setFXPadding(4); // Padding for glow
+            this.aiPaddleGraphics.postFX.addGlow(this.aiColor, 2, 0, false, 0.1, 32);
+        }
 
         // --- Create AI Paddle Physics Zone (Invisible) ---
         this.aiPaddlePhysics = this.add.zone(aiPaddleX, paddleY, this.paddleWidth, this.paddleHeight);
@@ -185,7 +195,14 @@ class GameScene extends Phaser.Scene {
         this.aiScoreText = this.add.text(gameWidth * 0.75, 50, '0', scoreTextStyle).setOrigin(0.5);
 
         // --- Sound Toggle Button ---
-        const soundButtonTextStyle = { fontSize: '18px', fill: '#fff', backgroundColor: '#555', padding: { left: 5, right: 5, top: 2, bottom: 2 } };
+        const soundButtonTextStyle = {
+            fontSize: '18px',
+            fill: '#ffffff',
+            fontFamily: '"Courier New", Courier, monospace',
+            // Removed background and padding
+            // backgroundColor: '#555', padding: { left: 5, right: 5, top: 2, bottom: 2 }
+            shadow: { offsetX: 1, offsetY: 1, color: '#cccccc', blur: 2, stroke: false, fill: true } // Subtle white/grey glow
+        };
         this.soundButton = this.add.text(gameWidth - this.boundsInset, this.boundsInset, '[SOUND ON]', soundButtonTextStyle)
             .setOrigin(1, 0) // Anchor top-right relative to bounds inset
             .setInteractive();
@@ -432,11 +449,12 @@ class GameScene extends Phaser.Scene {
     drawPaddleGraphics(graphics, x, y, width, height, color) {
         graphics.clear();
 
-        // Define gradient colors (slightly darker version for bottom)
-        const topColor = new Phaser.Display.Color().setFromRGB(Phaser.Display.Color.ValueToColor(color));
-        const bottomColor = topColor.clone().darken(80); // Increased darkening for more contrast
+        // Revert to solid color fill
+        graphics.fillStyle(color, 1); // Solid color, full alpha
+        // const topColor = new Phaser.Display.Color().setFromRGB(Phaser.Display.Color.ValueToColor(color));
+        // const bottomColor = topColor.clone().darken(80); // Increased darkening for more contrast
+        // graphics.fillGradientStyle(topColor.color, topColor.color, bottomColor.color, bottomColor.color, 1); // Vertical gradient
 
-        graphics.fillGradientStyle(topColor.color, topColor.color, bottomColor.color, bottomColor.color, 1); // Vertical gradient
         graphics.fillRect(0, 0, width, height); // Draw relative to graphics object origin
         graphics.setPosition(x - width / 2, y - height / 2); // Position graphics object correctly (origin is top-left)
     }
